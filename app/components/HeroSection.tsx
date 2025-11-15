@@ -23,13 +23,15 @@ export default function HeroSection() {
             Find exactly what you need from a vast collection of study materials, research papers, 
             and academic content.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <button className="px-8 py-3 bg-primary-green text-white rounded-full font-semibold hover:bg-primary-green-dark transform hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-              Start Exploring
-            </button>
-            <button className="px-8 py-3 border-2 border-primary-green text-primary-green rounded-full font-semibold hover:bg-primary-green hover:text-white transform hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
-              Upload Content
-            </button>
+          <div className="pt-4">
+            <div className="inline-flex items-center gap-4 p-4 rounded-2xl border-2 border-[#4A7766] bg-white shadow-sm">
+              <button className="px-8 py-3 bg-[#4A7766] text-white rounded-full font-semibold hover:bg-[#3C6757] hover:shadow-[0_0_24px_rgba(74,119,102,0.35)] transform hover:-translate-y-1 transition-all duration-300">
+                Start Exploring
+              </button>
+              <button className="px-8 py-3 border-2 border-[#4A7766] text-[#4A7766] rounded-full font-semibold hover:bg-[#4A7766] hover:text-white hover:shadow-[0_0_24px_rgba(74,119,102,0.18)] transform hover:-translate-y-1 transition-all duration-300">
+                Upload Content
+              </button>
+            </div>
           </div>
         </div>
 
