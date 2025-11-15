@@ -11,6 +11,8 @@ module.exports = {
         sans: ['var(--font-poppins)', 'system-ui', 'sans-serif'],
       },
       colors: {
+        primary: '#4A7766',
+        secondary: '#ECE7E2',
         primaryBg: '#ECE7E2',
         primaryGreen: '#4A7766',
         primaryGreenDark: '#3a5f52',
