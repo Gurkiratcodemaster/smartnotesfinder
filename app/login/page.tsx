@@ -1,110 +1,142 @@
-// app/login/page.tsx
-"use client"; // Required for hooks like useState and useRouter
+"use client";
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // Import Link for client-side navigation
+import { useState } from "react";
+import Link from "next/link";
+import Navbar from "../components/Navbar";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setError("");
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
-
-    if (!email.trim() || !password) {
-      setError("Please provide email and password.");
-      setIsLoading(false);
-      return;
-    }
+    setError("");
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.message || "Login failed");
-      }
+      const data = await response.json();
 
-      router.push('/dashboard'); // Redirect to a dashboard on successful login
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      if (response.ok) {
+        // Store user session/token (implement as needed)
+        localStorage.setItem("userToken", data.token);
+        window.location.href = "/";
+      } else {
+        setError(data.error || "Login failed");
+      }
+    } catch (error) {
+      setError("Network error. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
-      <div className="w-full max-w-sm bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
-        
-        {/* Our new form handler */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Error message display */}
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <span className="block sm:inline">{error}</span>
+    <div className="min-h-screen bg-primary-bg">
+      <Navbar />
+      
+      <div className="flex items-center justify-center px-6 py-16">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl font-bold text-text-dark mb-2">Welcome Back</h1>
+              <p className="text-text-light">Sign in to your SmartNotes account</p>
             </div>
-          )}
 
-          <div>
-            <label htmlFor="email" className="block font-medium mb-1">Email</label>
-            <input
-              type="email"
-              id="email" // Added id for label accessibility
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-              placeholder="Enter your email"
-              // Connect input to state
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading} // Disable when loading
-            />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-text-dark font-medium mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-primary-green transition-all duration-300"
+                  placeholder="Enter your email"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-text-dark font-medium mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-primary-green transition-all duration-300"
+                  placeholder="Enter your password"
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-800 text-sm">{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full px-6 py-3 bg-primary-green text-white rounded-lg font-semibold hover:bg-primary-green-dark disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 transition-all duration-300"
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="loading-spinner mr-2"></div>
+                    Signing In...
+                  </div>
+                ) : (
+                  "Sign In"
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-text-light">
+                Don't have an account?{" "}
+                <Link href="/signup" className="text-primary-green hover:text-primary-green-dark font-semibold">
+                  Sign up
+                </Link>
+              </p>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="text-center">
+                <p className="text-sm text-text-light mb-4">Continue as guest to browse public content</p>
+                <Link
+                  href="/"
+                  className="text-primary-green hover:text-primary-green-dark font-medium"
+                >
+                  Browse as Guest →
+                </Link>
+              </div>
+            </div>
           </div>
-
-          <div>
-            <label htmlFor="password" className="block font-medium mb-1">Password</label>
-            <input
-              type="password"
-              id="password" // Added id for label accessibility
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-300"
-              placeholder="Enter your password"
-              // Connect input to state
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading} // Disable when loading
-            />
-          </div>
-
-          <button
-            type="submit" // Specify button type
-            className="w-full bg-black text-white py-2 rounded hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading} // Disable button when loading
-          >
-            {/* Show loading text */}
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-
-        <p className="text-center mt-4 text-sm">
-          Don’t have an account?{" "}
-          {/* Use Next.js Link for better navigation */}
-          <Link href="/signup" className="text-blue-600 hover:underline">
-            Sign Up
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
   );
