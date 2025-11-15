@@ -159,7 +159,7 @@ export default function UploadBox() {
 
   return (
     <>
-      <section className="py-16 bg-primary-bg">
+      <section className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-6">
           {/* Section Header */}
           <div className="text-center mb-12">
@@ -172,7 +172,7 @@ export default function UploadBox() {
           </div>
 
           {/* Upload Area */}
-          <div className="bg-white rounded-2xl shadow-lg p-8">
+          <div className="bg-primary-bg rounded-2xl shadow-lg p-8">
             <div
               className={`relative border-3 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
                 isDragOver

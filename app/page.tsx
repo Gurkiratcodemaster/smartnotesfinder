@@ -8,10 +8,10 @@ export default function HomePage() {
     <div className="min-h-screen bg-primary-bg">
       <Navbar />
       <HeroSection />
-      <FeatureSection />
       <div className="py-16">
         <UploadBox />
       </div>
+      <FeatureSection />
     </div>
   );
 }

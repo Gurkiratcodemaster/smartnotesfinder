@@ -29,7 +29,7 @@ export default function FeatureSection() {
   ];
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-primary-bg">
       <div className="max-w-7xl mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-16 animate-fade-in">
@@ -48,7 +48,7 @@ export default function FeatureSection() {
           {features.map((feature, index) => (
             <div 
               key={index}
-              className="group relative bg-primary-bg rounded-2xl p-8 hover:shadow-xl transform hover:-translate-y-2 transition-all duration-500 animate-slide-up"
+              className="group relative bg-white rounded-2xl p-8 hover:shadow-xl transform hover:-translate-y-2 transition-all duration-500 animate-slide-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Icon */}
