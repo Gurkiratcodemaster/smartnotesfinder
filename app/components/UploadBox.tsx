@@ -8,10 +8,10 @@ export default function UploadBox() {
 
   const uploadFile = async (file: File) => {
     try {
-      setMessage("Uploading...");
+      setMessage("Requesting upload URL...");
       setOcrText("");
 
-      // 1. Get R2 presigned upload URL
+      // 1. Ask backend for presigned upload URL (Cloudflare R2)
       const res = await fetch("/api/upload", {
         method: "POST",
         body: JSON.stringify({ fileName: file.name }),
@@ -19,37 +19,48 @@ export default function UploadBox() {
       });
 
       const data = await res.json();
+      if (!data.uploadUrl) throw new Error("uploadUrl missing");
       const uploadUrl = data.uploadUrl;
 
-      if (!uploadUrl) throw new Error("uploadUrl missing");
-
-      // 2. Upload file to R2
-      await fetch(uploadUrl, {
+      // 2. Upload file to Cloudflare R2
+      setMessage("Uploading to Cloudflare R2...");
+      const uploadResponse = await fetch(uploadUrl, {
         method: "PUT",
         body: file,
       });
 
+      if (!uploadResponse.ok) {
+        const text = await uploadResponse.text();
+        throw new Error("Failed to upload to Cloudflare R2: " + text);
+      }
+
       setMessage("File uploaded successfully!");
 
-      // 3. If PDF → send file to OCR API
-      if (file.type === "application/pdf") {
-        setMessage("Running OCR on PDF...");
+      // 3. Run Tesseract OCR backend
+      setMessage("Running OCR...");
+      const formData = new FormData();
+      formData.append("file", file);
 
-        const ocrRes = await fetch("/api/extract-ocr", {
-          method: "POST",
-          body: file,
-          headers: {
-            "Content-Type": file.type,
-          },
-        });
+      const ocrRes = await fetch("/api/extract-ocr", {
+        method: "POST",
+        body: formData, // send as FormData
+      });
 
-        const ocrData = await ocrRes.json();
-        setOcrText(ocrData.text || "No text found");
-        setMessage("OCR Completed!");
+      // Check for errors and show them to the user
+      const ocrData = await ocrRes.json();
+      if (!ocrRes.ok) {
+        // Prefer explicit server error message if present
+        const serverErr = ocrData?.error || JSON.stringify(ocrData);
+        setMessage("OCR failed: " + serverErr);
+        setOcrText("");
+        return;
       }
+
+      setOcrText(ocrData.text || "No text found.");
+      setMessage("OCR Completed!");
     } catch (err: any) {
       console.error(err);
-      setMessage("Upload failed: " + err.message);
+      setMessage("Error: " + (err?.message ?? String(err)));
     }
   };
 
@@ -74,9 +85,7 @@ export default function UploadBox() {
         onChange={handleSelect}
       />
 
-      {message && (
-        <p className="mt-4 text-green-600 font-medium">{message}</p>
-      )}
+      {message && <p className="mt-4 text-blue-600 font-medium">{message}</p>}
 
       {ocrText && (
         <div className="mt-6 w-3/4 max-h-96 p-4 border rounded bg-gray-50 overflow-y-scroll">
