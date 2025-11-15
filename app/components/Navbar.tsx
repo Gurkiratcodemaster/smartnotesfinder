@@ -9,9 +9,15 @@ export default function Navbar() {
       {/* Left side */}
       <div className="flex items-center gap-6">
         <Link href="/" className="text-xl font-bold">MyApp</Link>
-        <Link href="/" className="hover:text-gray-300">Home</Link>
-        <Link href="/about" className="hover:text-gray-300">About Us</Link>
-        <Link href="/contact" className="hover:text-gray-300">Contact Us</Link>
+        <Link href="/" className="hover:text-gray-300">
+          Home
+        </Link>
+        <Link href="/about" className="hover:text-gray-300">
+          About Us
+        </Link>
+        <Link href="/contact" className="hover:text-gray-300">
+          Contact Us
+        </Link>
       </div>
 
       {/* Right side */}
