@@ -1,6 +1,19 @@
 # SmartNotes Finder - Educational Resource Platform
 
-A comprehensive educational platform built with Next.js that allows students, teachers, and colleges to upload, search, and discover educational content using AI-powered semantic search.
+A comprehensive educational platform built with Next.js frontend and Python FastAPI backend that allows students, teachers, and colleges to upload, search, and discover educational content using AI-powered semantic search and advanced OCR processing.
+
+## 🏗️ **New Architecture**
+
+This project now uses a **hybrid architecture**:
+- **Frontend**: Next.js with TypeScript and Tailwind CSS
+- **Backend**: Python FastAPI with Tesseract OCR and Sentence Transformers
+- **Benefits**: Superior OCR accuracy, faster processing, better AI embeddings
+
+## Quick Start
+
+1. **Start Frontend**: `npm run dev` (runs on http://localhost:3000)
+2. **Start Backend**: `cd backend && python main.py` (runs on http://localhost:8000)
+3. **Install Tesseract**: See backend/README.md for platform-specific instructions
 
 ## Features
 
