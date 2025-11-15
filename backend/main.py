@@ -123,10 +123,10 @@ def extract_text_from_pdf(pdf_path: str) -> Dict[str, Any]:
                     all_text.append(direct_text)
                 else:
                     # Convert page to image for OCR (for scanned PDFs)
-pix = page.get_pixmap(
-    matrix=fitz.Matrix(2, 2),
-    alpha=False
-)
+                    pix = page.get_pixmap(
+                        matrix=fitz.Matrix(2, 2),
+                        alpha=False
+                    )
                     img_path = os.path.join(temp_dir, f"page_{page_num}.png")
                     pix.save(img_path)
                     
