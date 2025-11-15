@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
-import connectToDatabase from "@/lib/mongodb";
-import File from "@/models/File";
-import Rating from "@/models/Rating";
+import File from "@/app/models/File";
+import Rating from "@/app/models/Rating";
+import Database from "@/lib/database";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -28,42 +28,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Valid fileId and rating (1-5) required" }, { status: 400 });
     }
 
-    await connectToDatabase();
-
     // Check if file exists
     const file = await File.findById(fileId);
     if (!file) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
-    // Check if user already rated this file
-    const existingRating = await Rating.findOne({
-      fileId: fileId,
-      userId: decoded.userId,
+    // Create or update rating
+    const savedRating = await Rating.create({
+      file_id: fileId,
+      user_id: decoded.userId,
+      rating: rating,
+      review: review || "",
     });
 
-    let savedRating;
-
-    if (existingRating) {
-      // Update existing rating
-      existingRating.rating = rating;
-      if (review) existingRating.review = review;
-      savedRating = await existingRating.save();
-    } else {
-      // Create new rating
-      const newRating = new Rating({
-        fileId: fileId,
-        userId: decoded.userId,
-        rating: rating,
-        review: review || "",
-      });
-      savedRating = await newRating.save();
-    }
-
-    // Recalculate file ratings
-    const allRatings = await Rating.find({ fileId: fileId });
-    const totalRatings = allRatings.length;
-    const averageRating = allRatings.reduce((sum, r) => sum + r.rating, 0) / totalRatings;
+    // Get updated average rating
+    const ratingStats = await Rating.getAverageRating(fileId);
+    const allRatings = await Rating.findByFileId(fileId);
     
     const ratingsBreakdown = {
       1: allRatings.filter(r => r.rating === 1).length,
@@ -73,19 +54,12 @@ export async function POST(req: NextRequest) {
       5: allRatings.filter(r => r.rating === 5).length,
     };
 
-    // Update file ratings
-    await File.findByIdAndUpdate(fileId, {
-      'ratings.averageRating': averageRating,
-      'ratings.totalRatings': totalRatings,
-      'ratings.ratingsBreakdown': ratingsBreakdown,
-    });
-
     return NextResponse.json({
-      message: existingRating ? "Rating updated successfully" : "Rating added successfully",
+      message: "Rating saved successfully",
       rating: savedRating,
       fileRatings: {
-        averageRating,
-        totalRatings,
+        averageRating: ratingStats.average,
+        totalRatings: ratingStats.count,
         ratingsBreakdown,
       }
     });
@@ -105,20 +79,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "fileId parameter required" }, { status: 400 });
     }
 
-    await connectToDatabase();
-
     // Get all ratings for the file
-    const ratings = await Rating.find({ fileId })
-      .populate('userId', 'name userType')
-      .sort({ createdAt: -1 });
+    const ratings = await Rating.findByFileId(fileId);
 
     return NextResponse.json({
       ratings: ratings.map(rating => ({
-        id: rating._id,
+        id: rating.id,
         rating: rating.rating,
         review: rating.review,
-        user: rating.userId,
-        createdAt: rating.createdAt,
+        userId: rating.user_id,
+        createdAt: rating.created_at,
       }))
     });
 

@@ -1,243 +1,162 @@
 import { NextRequest, NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
-import File from "@/models/File";
+import File from "@/app/models/File";
+import LocalFileStorage from "@/lib/fileStorage";
+import jwt from "jsonwebtoken";
 
-// Simple text embedding function (matching the one in OCR)
-function generateSimpleEmbeddings(text: string): number[] {
-  const words = text.toLowerCase().split(/\W+/).filter(word => word.length > 2);
-  const embedding = new Array(384).fill(0);
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-  words.forEach((word) => {
-    const hash = word.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const position = hash % 384;
-    embedding[position] += 1 / (words.length + 1);
-  });
-
-  return embedding;
+// Simple text similarity function
+function calculateTextSimilarity(query: string, content: string): number {
+  const queryWords = query.toLowerCase().split(/\W+/).filter(word => word.length > 2);
+  const contentWords = content.toLowerCase().split(/\W+/).filter(word => word.length > 2);
+  
+  const matches = queryWords.filter(word => 
+    contentWords.some(contentWord => contentWord.includes(word) || word.includes(contentWord))
+  );
+  
+  return queryWords.length > 0 ? matches.length / queryWords.length : 0;
 }
 
-// Calculate cosine similarity between two embeddings
-function cosineSimilarity(a: number[], b: number[]): number {
-  if (a.length !== b.length) return 0;
-
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-
-  const magnitude = Math.sqrt(normA) * Math.sqrt(normB);
-  return magnitude === 0 ? 0 : dotProduct / magnitude;
-}
-
-// Types used in this file
+// Types for search
 interface SearchFilters {
   subject?: string;
-  class?: string;
-  semester?: string;
-  uploaderType?: string;
-  [key: string]: any;
-}
-
-interface FileLabels {
-  subject?: string;
   topic?: string;
-  tags?: string[];
-  [key: string]: any;
+  tags?: string;
+  fileType?: string;
 }
 
-interface Ratings {
-  averageRating?: number;
-  [key: string]: any;
-}
-
-interface Uploader {
-  _id?: any;
-  name?: string;
-  userType?: string;
-  [key: string]: any;
-}
-
-interface FileDoc {
-  _id?: any;
-  fileName?: string;
-  originalName?: string;
-  fileSize?: number;
-  cloudflareUrl?: string;
-  labels?: FileLabels;
-  metadata?: any;
-  ocrText?: string;
-  embeddings?: number[];
-  ratings?: Ratings;
-  viewsCount?: number;
-  uploaderType?: string;
-  uploaderId?: Uploader | any;
-  [key: string]: any;
-}
-
-interface SearchScore {
-  semantic: number;
-  textMatch: number;
-  labelMatch: number;
-  rating: number;
-  combined: number;
-}
-
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
-    const { query, userProfile = null, filters = {} } = await req.json();
+    // Check authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
+    const token = authHeader.split(" ")[1];
+    try {
+      jwt.verify(token, JWT_SECRET);
+    } catch (error) {
+      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const query = searchParams.get('q') || '';
+    const subject = searchParams.get('subject');
+    const topic = searchParams.get('topic');
+    const tags = searchParams.get('tags');
+    const fileType = searchParams.get('fileType');
 
     if (!query) {
       return NextResponse.json({ error: "Search query is required" }, { status: 400 });
     }
 
-    await connectToDatabase();
-
-    // Generate embeddings for the search query
-    const queryEmbeddings = generateSimpleEmbeddings(query);
-
-    // Build MongoDB query with filters
-    const searchCriteria: Record<string, any> = {
-      isPublic: true, // Only search public files
-    };
-
-    if ((filters as SearchFilters).subject) {
-      searchCriteria['labels.subject'] = new RegExp((filters as SearchFilters).subject as string, 'i');
-    }
-    if ((filters as SearchFilters).class) {
-      searchCriteria['labels.class'] = new RegExp((filters as SearchFilters).class as string, 'i');
-    }
-    if ((filters as SearchFilters).semester) {
-      searchCriteria['labels.semester'] = new RegExp((filters as SearchFilters).semester as string, 'i');
-    }
-    if ((filters as SearchFilters).uploaderType) {
-      searchCriteria.uploaderType = (filters as SearchFilters).uploaderType;
+    let files;
+    
+    if (query.trim()) {
+      // Search files by content
+      files = await File.search(query);
+    } else {
+      // Get all files
+      files = await File.findAll();
     }
 
-    // First, get files that match text search or filters
-    let files: FileDoc[] = [];
-    try {
-      // Text search in labels and OCR text
-      const textSearchCriteria: Record<string, any> = {
-        ...searchCriteria,
-        $or: [
-          { $text: { $search: query } },
-          { 'labels.subject': new RegExp(query, 'i') },
-          { 'labels.topic': new RegExp(query, 'i') },
-          { 'labels.tags': { $in: [new RegExp(query, 'i')] } },
-          { ocrText: new RegExp(query, 'i') },
-        ]
-      };
+    // Apply additional filters
+    let filteredFiles = files;
 
-      files = (await File.find(textSearchCriteria)
-        .populate('uploaderId', 'name userType')
-        .select('fileName originalName fileSize cloudflareUrl labels metadata ocrText embeddings ratings viewsCount uploaderType')
-        .lean()
-        .limit(50)) as FileDoc[];
-    } catch (textSearchError) {
-      console.log("Text search failed, falling back to basic search:", textSearchError);
-      // Fallback to basic search without full-text search
-      files = (await File.find({
-        ...searchCriteria,
-        $or: [
-          { 'labels.subject': new RegExp(query, 'i') },
-          { 'labels.topic': new RegExp(query, 'i') },
-          { 'labels.tags': { $in: [new RegExp(query, 'i')] } },
-        ]
-      })
-        .populate('uploaderId', 'name userType')
-        .select('fileName originalName fileSize cloudflareUrl labels metadata ocrText embeddings ratings viewsCount uploaderType')
-        .lean()
-        .limit(50)) as FileDoc[];
+    if (subject) {
+      filteredFiles = filteredFiles.filter(file => 
+        file.labels?.subject?.toLowerCase().includes(subject.toLowerCase())
+      );
     }
 
-    // Calculate semantic similarity scores
-    const filesWithScores: (FileDoc & { searchScore: SearchScore })[] = files.map((file: FileDoc) => {
-      let semanticScore = 0;
-      let textMatchScore = 0;
-      let labelMatchScore = 0;
+    if (topic) {
+      filteredFiles = filteredFiles.filter(file => 
+        file.labels?.topic?.toLowerCase().includes(topic.toLowerCase())
+      );
+    }
 
-      // Semantic similarity using embeddings
-      if (file.embeddings && file.embeddings.length === 384) {
-        semanticScore = cosineSimilarity(queryEmbeddings, file.embeddings);
+    if (tags) {
+      filteredFiles = filteredFiles.filter(file => 
+        file.labels?.tags?.some((tag: string) => 
+          tag.toLowerCase().includes(tags.toLowerCase())
+        )
+      );
+    }
+
+    if (fileType) {
+      filteredFiles = filteredFiles.filter(file => 
+        file.mime_type?.includes(fileType)
+      );
+    }
+
+    // Calculate relevance scores
+    const resultsWithScores = filteredFiles.map(file => {
+      let score = 0;
+      const fileContent = [
+        file.file_name,
+        file.original_name,
+        file.content || '',
+        JSON.stringify(file.labels || {}),
+      ].join(' ');
+
+      // Text similarity score
+      score += calculateTextSimilarity(query, fileContent) * 0.6;
+
+      // Exact matches boost
+      if (file.file_name.toLowerCase().includes(query.toLowerCase())) {
+        score += 0.3;
+      }
+      if (file.original_name.toLowerCase().includes(query.toLowerCase())) {
+        score += 0.2;
       }
 
-      // Text match score
-      const queryWords: string[] = query.toLowerCase().split(/\W+/).filter(Boolean);
-      const textContent: string = (file.ocrText || '').toLowerCase();
-      const matchingWords: string[] = queryWords.filter(word => textContent.includes(word));
-      textMatchScore = queryWords.length ? matchingWords.length / queryWords.length : 0;
-
-      // Label match score
-      const labels: string = [
-        file.labels?.subject || '',
-        file.labels?.topic || '',
-        ...(file.labels?.tags || [])
-      ].join(' ').toLowerCase();
-      const labelMatchingWords: string[] = queryWords.filter(word => labels.includes(word));
-      labelMatchScore = queryWords.length ? labelMatchingWords.length / queryWords.length : 0;
-
-      // Combine scores with weights
-      const combinedScore: number = (
-        semanticScore * 0.4 +
-        textMatchScore * 0.3 +
-        labelMatchScore * 0.3
-      );
-
-      // Factor in ratings
-      const ratingBoost: number = (file.ratings?.averageRating || 0) / 5 * 0.1;
-      const finalScore: number = combinedScore + ratingBoost;
+      // Recent files boost
+      const daysSinceUpload = file.upload_date ? 
+        (Date.now() - new Date(file.upload_date).getTime()) / (1000 * 60 * 60 * 24) : 0;
+      const recencyBoost = Math.max(0, 1 - daysSinceUpload / 30) * 0.1;
+      score += recencyBoost;
 
       return {
         ...file,
-        searchScore: {
-          semantic: semanticScore,
-          textMatch: textMatchScore,
-          labelMatch: labelMatchScore,
-          rating: file.ratings?.averageRating || 0,
-          combined: finalScore,
-        }
+        score,
+        fileUrl: LocalFileStorage.getFileUrl(file.file_name)
       };
     });
 
-    // Sort by combined score (highest first)
-    filesWithScores.sort((a, b) => b.searchScore.combined - a.searchScore.combined);
+    // Sort by relevance score
+    resultsWithScores.sort((a, b) => b.score - a.score);
 
-    // Filter out files with very low scores
-    const relevantFiles = filesWithScores.filter(file => file.searchScore.combined > 0.1);
-
-    // Format response
-    const results = relevantFiles.map((file: FileDoc & { searchScore: SearchScore }) => ({
-      id: file._id,
-      fileName: file.originalName,
-      cloudflareUrl: file.cloudflareUrl,
+    // Format results
+    const results = resultsWithScores.map(file => ({
+      id: file.id,
+      fileName: file.file_name,
+      originalName: file.original_name,
+      fileSize: file.file_size,
+      mimeType: file.mime_type,
+      fileUrl: file.fileUrl,
+      uploadDate: file.upload_date,
       labels: file.labels,
       metadata: file.metadata,
-      uploaderType: file.uploaderType,
-      uploader: file.uploaderId,
-      ratings: file.ratings,
-      viewsCount: file.viewsCount,
-      searchScore: file.searchScore,
-      preview: (file.ocrText?.substring(0, 200) ?? '') + ((file.ocrText?.length ?? 0) > 200 ? '...' : ''),
+      score: file.score,
+      preview: file.content?.substring(0, 200) + (file.content?.length > 200 ? '...' : '') || ''
     }));
 
     return NextResponse.json({
-      results,
+      results: results.slice(0, 50), // Limit to 50 results
       query,
       totalResults: results.length,
       searchMetrics: {
-        avgSemanticScore: results.length ? results.reduce((sum, r) => sum + r.searchScore.semantic, 0) / results.length : 0,
-        avgTextMatchScore: results.length ? results.reduce((sum, r) => sum + r.searchScore.textMatch, 0) / results.length : 0,
-        avgLabelMatchScore: results.length ? results.reduce((sum, r) => sum + r.searchScore.labelMatch, 0) / results.length : 0,
+        avgScore: results.length ? results.reduce((sum, r) => sum + r.score, 0) / results.length : 0,
+        maxScore: results.length ? Math.max(...results.map(r => r.score)) : 0,
       }
     });
 
-  } catch (err: any) {
-    console.error("Search API error:", err);
-    return NextResponse.json({ error: "Search failed" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Search API error:", error);
+    return NextResponse.json(
+      { error: "Search failed", detail: error.message },
+      { status: 500 }
+    );
   }
 }

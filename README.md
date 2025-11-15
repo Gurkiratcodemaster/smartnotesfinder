@@ -1,19 +1,21 @@
 # SmartNotes Finder - Educational Resource Platform
 
-A comprehensive educational platform built with Next.js frontend and Python FastAPI backend that allows students, teachers, and colleges to upload, search, and discover educational content using AI-powered semantic search and advanced OCR processing.
+A comprehensive educational platform built with Next.js that allows students, teachers, and colleges to upload, search, and discover educational content using local file storage and SQLite database.
 
-## 🏗️ **New Architecture**
+## 🏗️ **New Local Architecture**
 
-This project now uses a **hybrid architecture**:
+This project uses a **simplified local architecture**:
 - **Frontend**: Next.js with TypeScript and Tailwind CSS
-- **Backend**: Python FastAPI with Tesseract OCR and Sentence Transformers
-- **Benefits**: Superior OCR accuracy, faster processing, better AI embeddings
+- **Database**: SQLite for local data storage
+- **File Storage**: Local file system storage
+- **Authentication**: Local JWT-based authentication
+- **Benefits**: No cloud dependencies, simple setup, offline capability
 
 ## Quick Start
 
-1. **Start Frontend**: `npm run dev` (runs on http://localhost:3000)
-2. **Start Backend**: `cd backend && python main.py` (runs on http://localhost:8000)
-3. **Install Tesseract**: See backend/README.md for platform-specific instructions
+1. **Install dependencies**: `npm install`
+2. **Start the application**: `npm run dev` (runs on http://localhost:3000)
+3. **Upload and search files** - everything is stored locally!
 
 ## Features
 
@@ -25,36 +27,34 @@ This project now uses a **hybrid architecture**:
 
 ### 📚 Core Functionality
 
-#### 1. **Smart File Upload System**
-- PDF file upload with metadata extraction
-- **Cloudflare R2** storage integration
-- **OCR text extraction** using Tesseract.js
-- **Label system**: class, subject, topic, section, semester
-- **Automatic embedding generation** for semantic search
+#### 1. **Simple File Upload System**
+- Multi-format file upload (images, PDFs, documents)
+- **Local file storage** in uploads directory
+- **Label system**: subject, topic, tags
+- **Metadata storage** in SQLite database
 
-#### 2. **AI-Powered Search**
-- **Semantic search** using sentence transformers
-- **Multi-criteria matching**: content, labels, ratings
-- **Advanced filtering** by subject, class, semester, uploader type
-- **Relevance scoring** with combined metrics
+#### 2. **Text-Based Search**
+- **Full-text search** across file names and content
+- **Label-based filtering** by subject, topic, tags
+- **File type filtering**
+- **Relevance scoring** based on text similarity
 
-#### 3. **User Profile System**
-- **Three user types**: Student, Teacher, College
-- **Profile-based recommendations**
-- **Authentication system** with JWT
-- **Upload permissions** based on user type
+#### 3. **Local User System**
+- **User registration and login**
+- **JWT authentication** stored locally
+- **User sessions** managed in SQLite
+- **Secure password hashing**
 
 #### 4. **Rating & Review System**
 - **5-star rating system**
 - **Review comments**
-- **Rating-based search ranking**
+- **Rating statistics** per file
 - **Community feedback integration**
 
-#### 5. **Personalized Suggestions**
-- **Profile-based recommendations**
-- **Interest matching algorithm**
-- **Popular content discovery**
-- **Guest user support**
+#### 5. **Simple Suggestions**
+- **Recent file recommendations**
+- **Random content discovery**
+- **File popularity based suggestions**
 
 ### 🛠️ Technology Stack
 
@@ -66,26 +66,23 @@ This project now uses a **hybrid architecture**:
 
 #### Backend
 - **Next.js API Routes**
-- **MongoDB** with Mongoose ODM
-- **JWT** authentication
+- **SQLite** for local database storage
+- **JWT** authentication with local sessions
 - **bcryptjs** for password hashing
 
-#### AI & Processing
-- **Tesseract.js** for OCR
-- **PDF.js** for PDF processing
-- **Simple embeddings** (ready for sentence-transformers)
-- **Cosine similarity** for semantic matching
+#### File Processing
+- **Multer** for file upload handling
+- **Local file system** for storage
+- **Text similarity** for basic search
 
 #### Storage
-- **Cloudflare R2** for file storage
-- **MongoDB** for metadata and search indices
+- **Local file system** (uploads directory)
+- **SQLite database** for metadata and user data
 
 ## Installation & Setup
 
 ### Prerequisites
 - Node.js 18+
-- MongoDB (local or MongoDB Atlas)
-- Cloudflare R2 account
 
 ### 1. Clone the repository
 ```bash
@@ -98,55 +95,39 @@ cd smartnotesfinder
 npm install
 ```
 
-### 3. Environment Configuration
-```bash
-cp .env.example .env.local
-```
-
-Edit `.env.local` with your configuration:
+### 3. Environment Configuration (Optional)
+Create `.env.local` if you want to customize settings:
 
 ```env
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017/smartnotes
-
-# JWT Secret
+# JWT Secret (optional, has default)
 JWT_SECRET=your-super-secret-jwt-key
-
-# Cloudflare R2
-R2_ACCOUNT_ID=your-account-id
-R2_ACCESS_KEY_ID=your-access-key
-R2_SECRET_ACCESS_KEY=your-secret-key
-R2_BUCKET_NAME=your-bucket-name
 ```
 
-### 4. Database Setup
-Ensure MongoDB is running and accessible via your MONGODB_URI.
-
-### 5. Cloudflare R2 Setup
-1. Create a Cloudflare R2 bucket
-2. Generate API tokens with read/write permissions
-3. Configure CORS for your domain
-
-### 6. Run the application
+### 4. Run the application
 ```bash
 npm run dev
 ```
 
 Visit `http://localhost:3000` to see the application.
 
+The application will automatically:
+- Create the SQLite database (`data/smartnotes.db`)
+- Create the uploads directory (`uploads/`)
+- Initialize all necessary tables
+
 ## Usage Guide
 
 ### For Students
-1. **Sign up** with student account
-2. **Upload** study materials with proper labels
-3. **Search** for content using keywords or filters
+1. **Sign up** with a username and email
+2. **Upload** study materials with labels (subject, topic, tags)
+3. **Search** for content using keywords
 4. **Rate and review** helpful materials
-5. **Get suggestions** based on your profile and interests
+5. **Browse suggestions** on the suggestions page
 
 ### For Teachers
-1. **Create teacher account**
+1. **Create account** (same registration process)
 2. **Upload** course materials and resources
-3. **Organize content** with detailed metadata
+3. **Organize content** with detailed labels
 4. **View analytics** on content popularity
 5. **Discover** relevant teaching materials
 
@@ -166,95 +147,129 @@ Visit `http://localhost:3000` to see the application.
 ### File Management
 - `POST /api/upload` - Generate upload URL and create file record
 - `POST /api/extract-ocr` - Process uploaded file and extract text
+## API Endpoints
+
+### Authentication
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/login` - User login
+
+### File Management
+- `POST /api/upload` - Upload files with metadata
+- `GET /api/files/[filename]` - Serve uploaded files
 
 ### Search & Discovery
-- `POST /api/search` - Semantic search with filters
-- `GET /api/suggestions` - Personalized content recommendations
+- `GET /api/search?q=<query>` - Text-based search with filters
+- `GET /api/suggestions` - Simple content recommendations
 
 ### Ratings
 - `POST /api/rate` - Add/update file rating
 - `GET /api/rate?fileId=<id>` - Get file ratings and reviews
 
-## Database Schema
+## Database Schema (SQLite)
 
-### Users Collection
-```javascript
-{
-  name: String,
-  email: String (unique),
-  password: String (hashed),
-  userType: 'student' | 'teacher' | 'college',
-  profile: {
-    class: String,
-    semester: String,
-    subject: String,
-    institution: String,
-    bio: String
-  }
-}
+### Users Table
+```sql
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-### Files Collection
-```javascript
-{
-  fileName: String,
-  originalName: String,
-  cloudflareUrl: String,
-  uploaderId: ObjectId,
-  uploaderType: String,
-  labels: {
-    class: String,
-    subject: String,
-    topic: String,
-    section: String,
-    semester: String,
-    tags: [String]
-  },
-  ocrText: String,
-  embeddings: [Number],
-  ratings: {
-    averageRating: Number,
-    totalRatings: Number,
-    ratingsBreakdown: Object
-  }
-}
+### Files Table
+```sql
+CREATE TABLE files (
+  id TEXT PRIMARY KEY,
+  file_name TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  file_size INTEGER,
+  mime_type TEXT,
+  file_path TEXT NOT NULL,
+  upload_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+  content TEXT DEFAULT '',
+  labels TEXT DEFAULT '{}',
+  metadata TEXT DEFAULT '{}',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
+### Ratings Table
+```sql
+CREATE TABLE ratings (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  file_id TEXT NOT NULL,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  review TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users (id),
+  FOREIGN KEY (file_id) REFERENCES files (id),
+  UNIQUE(user_id, file_id)
+);
+```
+
+### Sessions Table
+```sql
+CREATE TABLE sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  token TEXT NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users (id)
+);
+```
 ## Development
 
 ### Adding New Features
 1. Create API route in `/app/api/`
 2. Add corresponding UI components
-3. Update database models if needed
-4. Test thoroughly with different user types
+3. Update database utilities if needed (in `lib/database.ts`)
+4. Test thoroughly with local storage
 
 ### Improving Search
-- Replace simple embeddings with sentence-transformers
-- Add more sophisticated ranking algorithms
-- Implement query expansion and relevance feedback
+- Add more sophisticated text similarity algorithms
+- Implement full-text search indexing in SQLite
+- Add file content extraction for better search
 
 ### Performance Optimization
-- Implement caching for search results
+- Implement file caching
 - Add database indices for better query performance
-- Optimize image processing and OCR
+- Optimize file upload and storage
 
 ## Deployment
 
-### Environment Setup
-- Configure production MongoDB instance
-- Set up Cloudflare R2 bucket with proper CORS
-- Generate secure JWT secrets
+### Local Production Setup
+- Set secure JWT secrets in production
+- Configure proper file permissions for uploads directory
+- Set up backup scripts for SQLite database
 
-### Recommended Platforms
-- **Vercel** (recommended for Next.js)
-- **Netlify** 
-- **AWS** with custom configuration
+### Recommended Deployment Options
+- **Vercel** (for frontend + API routes)
+- **VPS with Node.js** (for full local control)
+- **Docker container** (for easy deployment)
 
 ### Production Considerations
 - Enable HTTPS for all communications
 - Set up proper error monitoring
-- Configure automatic backups for database
+- Configure automatic backups for SQLite database and uploads
 - Implement rate limiting for API endpoints
+- Set proper file size limits
+
+## File Storage Structure
+
+```
+smartnotesfinder/
+├── data/
+│   └── smartnotes.db       # SQLite database
+├── uploads/
+│   ├── [timestamp]_[id]_[filename]  # Uploaded files
+│   └── thumbnails/         # Future: file thumbnails
+```
 
 ## Contributing
 
@@ -269,6 +284,7 @@ This project is licensed under the MIT License.
 
 ## Support
 
+For issues and questions, please create an issue on GitHub.
 For issues and questions:
 - Open GitHub issues for bugs
 - Check documentation for common problems

@@ -1,45 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import connectToDatabase from "@/lib/mongodb";
-import User from "@/models/User";
+import User from "@/app/models/User";
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, userType } = await req.json();
+    const { username, email, password, userType } = await req.json();
 
-    if (!name || !email || !password || !userType) {
-      return NextResponse.json({ error: "All fields are required" }, { status: 400 });
+    if (!username || !email || !password) {
+      return NextResponse.json({ error: "Username, email, and password are required" }, { status: 400 });
     }
-
-    if (!['student', 'teacher', 'college'].includes(userType)) {
-      return NextResponse.json({ error: "Invalid user type" }, { status: 400 });
-    }
-
-    await connectToDatabase();
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
+    const existingUserByEmail = await User.findByEmail(email.toLowerCase());
+    if (existingUserByEmail) {
       return NextResponse.json({ error: "User already exists with this email" }, { status: 400 });
+    }
+
+    const existingUserByUsername = await User.findByUsername(username);
+    if (existingUserByUsername) {
+      return NextResponse.json({ error: "User already exists with this username" }, { status: 400 });
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
-    const user = new User({
-      name,
+    const user = await User.create({
+      username,
       email: email.toLowerCase(),
       password: hashedPassword,
-      userType,
+      userType: userType || 'student',
       profile: {},
     });
 
-    await user.save();
-
     return NextResponse.json({ 
       message: "User created successfully",
-      userId: user._id 
+      userId: user.id 
     });
 
   } catch (error: any) {

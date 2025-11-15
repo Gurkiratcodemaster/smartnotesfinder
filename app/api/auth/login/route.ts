@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import connectToDatabase from "@/lib/mongodb";
-import User from "@/models/User";
+import User from "@/app/models/User";
+import Database from "@/lib/database";
+import { v4 as uuidv4 } from 'uuid';
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
@@ -14,10 +15,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    await connectToDatabase();
-
     // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const user = await User.findByEmail(email.toLowerCase());
     if (!user) {
       return NextResponse.json({ error: "Invalid email or password" }, { status: 400 });
     }
@@ -31,23 +30,35 @@ export async function POST(req: NextRequest) {
     // Generate JWT token
     const token = jwt.sign(
       { 
-        userId: user._id,
+        userId: user.id,
         email: user.email,
-        userType: user.userType 
+        username: user.username
       },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
 
+    // Store session in database
+    const sessionId = uuidv4();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+
+    await Database.createSession({
+      id: sessionId,
+      user_id: user.id,
+      token,
+      expires_at: expiresAt
+    });
+
     return NextResponse.json({
       message: "Login successful",
       token,
       user: {
-        id: user._id,
-        name: user.name,
+        id: user.id,
+        username: user.username,
         email: user.email,
-        userType: user.userType,
-        profile: user.profile,
+        userType: user.userType || 'student',
+        profile: user.profile || {},
       }
     });
 
