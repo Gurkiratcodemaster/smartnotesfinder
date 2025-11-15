@@ -65,7 +65,7 @@ const FileSchema: Schema = new Schema({
   uploaderId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    required: false,
   },
   uploaderType: {
     type: String,
@@ -96,11 +96,13 @@ const FileSchema: Schema = new Schema({
   },
   ocrText: {
     type: String,
-    required: true,
+    required: false,
+    default: '',
   },
   embeddings: {
     type: [Number],
-    required: true,
+    required: false,
+    default: [],
   },
   ratings: {
     averageRating: {
