@@ -35,12 +35,12 @@ export default function Navbar() {
 
         {/* Right side buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <button className="px-6 py-2 bg-[#4A7766] text-white border-2 border-[#4A7766] rounded-full hover:bg-[#3C6757] focus-visible:ring-2 focus-visible:ring-[#4A7766] hover:shadow-[0_0_20px_rgba(74,119,102,0.45)] transform hover:-translate-y-1 transition-all duration-300 font-medium">
+          <button className="px-6 py-2 bg-[#4A7766] text-white border-2 border-[#4A7766] rounded-full hover:bg-[#3C6757] focus-visible:ring-2 focus-visible:ring-[#4A7766] transform hover:-translate-y-1 transition-all duration-300 font-medium">
             Search Files
           </button>
           <Link
             href="/login"
-            className="px-6 py-2 bg-[#4A7766] text-white border-2 border-[#4A7766] rounded-full hover:bg-[#3C6757] focus-visible:ring-2 focus-visible:ring-[#4A7766] hover:shadow-[0_0_20px_rgba(74,119,102,0.45)] transform hover:-translate-y-1 transition-all duration-300 font-medium"
+            className="px-6 py-2 bg-[#4A7766] text-white border-2 border-[#4A7766] rounded-full hover:bg-[#3C6757] focus-visible:ring-2 focus-visible:ring-[#4A7766] transform hover:-translate-y-1 transition-all duration-300 font-medium"
           >
             Login
           </Link>
@@ -72,7 +72,7 @@ export default function Navbar() {
             <Link href="/suggestions" className="text-text-dark hover:text-primary-green transition-colors px-4 py-2 font-bold">Suggestions</Link>
             <Link href="/about" className="text-text-dark hover:text-primary-green transition-colors px-4 py-2 font-bold">About</Link>
             <div className="flex flex-col space-y-2 px-4 pt-2">
-              <Link href="/login" className="text-center px-4 py-2 bg-[#4A7766] text-white border-2 border-[#4A7766] rounded-full hover:bg-[#3C6757] focus-visible:ring-2 focus-visible:ring-[#4A7766]">Login</Link>
+              <Link href="/login" className="text-center px-4 py-2 bg-[#4A7766] text-white rounded-full">Login</Link>
               <Link href="/signup" className="text-center px-4 py-2 bg-[#4A7766] text-white border-2 border-[#4A7766] rounded-full hover:bg-[#3C6757] focus-visible:ring-2 focus-visible:ring-[#4A7766]">Sign Up</Link>
             </div>
           </div>

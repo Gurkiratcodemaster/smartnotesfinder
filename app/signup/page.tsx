@@ -92,7 +92,7 @@ export default function SignupPage() {
 
               <div>
                 <label htmlFor="email" className="block text-text-dark font-medium mb-2">
-                  Email Address
+                  College Mail
                 </label>
                 <input
                   type="email"
@@ -102,7 +102,7 @@ export default function SignupPage() {
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-primary-green transition-all duration-300"
-                  placeholder="Enter your email"
+                  placeholder="Enter your college mail"
                 />
               </div>
 
@@ -164,7 +164,7 @@ export default function SignupPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full px-6 py-3 bg-primary-green text-white rounded-lg font-semibold hover:bg-primary-green-dark disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 transition-all duration-300"
+                className="w-full px-6 py-3 bg-[#4A7766] text-white rounded-lg font-semibold hover:bg-[#3C6757] focus-visible:ring-2 focus-visible:ring-[#4A7766] disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 transition-all duration-200"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -172,7 +172,7 @@ export default function SignupPage() {
                     Creating Account...
                   </div>
                 ) : (
-                  "Create Account"
+                  "Sign Up"
                 )}
               </button>
             </form>
@@ -180,7 +180,7 @@ export default function SignupPage() {
             <div className="mt-6 text-center">
               <p className="text-text-light">
                 Already have an account?{" "}
-                <Link href="/login" className="text-primary-green hover:text-primary-green-dark font-semibold">
+                <Link href="/login" className="text-blue-400 hover:underline hover:text-blue-600 font-semibold">
                   Sign in
                 </Link>
               </p>
