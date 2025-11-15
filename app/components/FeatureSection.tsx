@@ -29,7 +29,7 @@ export default function FeatureSection() {
   ];
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-primary-bg">
       <div className="max-w-7xl mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-16 animate-fade-in">
@@ -48,7 +48,7 @@ export default function FeatureSection() {
           {features.map((feature, index) => (
             <div 
               key={index}
-              className="group relative bg-primary-bg rounded-2xl p-8 hover:shadow-xl transform hover:-translate-y-2 transition-all duration-500 animate-slide-up"
+              className="group relative bg-white rounded-2xl p-8 hover:shadow-xl transform hover:-translate-y-2 transition-all duration-500 animate-slide-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               {/* Icon */}
@@ -72,9 +72,9 @@ export default function FeatureSection() {
 
         {/* Call to Action */}
         <div className="text-center mt-16 animate-fade-in">
-          <div className="inline-flex items-center space-x-4 bg-primary-green rounded-full px-8 py-4 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
+          <div className="inline-flex items-center space-x-4 bg-[#4A7766] rounded-full px-8 py-4 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
             <span className="font-semibold">Ready to get started?</span>
-            <button className="bg-white text-primary-green px-6 py-2 rounded-full font-medium hover:bg-primary-bg transition-colors duration-300">
+            <button className="bg-[#4A7766] text-white px-6 py-2 rounded-full font-medium hover:bg-[#3C6757] hover:shadow-[0_0_20px_rgba(74,119,102,0.45)] transition-all duration-300">
               Upload Your First File
             </button>
           </div>

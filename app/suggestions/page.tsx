@@ -241,7 +241,7 @@ export default function SuggestionsPage() {
             {!userProfile && (
               <button
                 onClick={() => window.location.href = '/login'}
-                className="px-8 py-3 bg-primary-green text-white rounded-lg font-semibold hover:bg-primary-green-dark transform hover:-translate-y-1 transition-all duration-300"
+                className="px-8 py-3 bg-[#4A7766] text-white rounded-xl font-semibold hover:bg-[#3C6757] hover:shadow-[0_8px_30px_rgba(74,119,102,0.25)] transform hover:-translate-y-1 hover:scale-105 transition-all duration-300"
               >
                 Sign In for Suggestions
               </button>

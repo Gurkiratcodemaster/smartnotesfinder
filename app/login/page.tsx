@@ -63,7 +63,7 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="email" className="block text-text-dark font-medium mb-2">
-                  Email Address
+                  College Mail
                 </label>
                 <input
                   type="email"
@@ -102,7 +102,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full px-6 py-3 bg-primary-green text-white rounded-lg font-semibold hover:bg-primary-green-dark disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 transition-all duration-300"
+                className="w-full px-6 py-3 bg-[#4A7766] text-white rounded-lg font-semibold hover:bg-[#3C6757] disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-1 transition-all duration-300"
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center">
@@ -110,7 +110,7 @@ export default function LoginPage() {
                     Signing In...
                   </div>
                 ) : (
-                  "Sign In"
+                  "Login"
                 )}
               </button>
             </form>
@@ -118,8 +118,12 @@ export default function LoginPage() {
             <div className="mt-6 text-center">
               <p className="text-text-light">
                 Don't have an account?{" "}
-                <Link href="/signup" className="text-primary-green hover:text-primary-green-dark font-semibold">
+                <Link href="/signup" className="text-blue-400 hover:underline hover:text-blue-600 font-semibold">
                   Sign up
+                </Link>
+                <br />
+                <Link href="/" className="text-blue-400 hover:underline hover:text-blue-600 font-medium mt-2 inline-block">
+                  Go to Home
                 </Link>
               </p>
             </div>
@@ -127,12 +131,14 @@ export default function LoginPage() {
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="text-center">
                 <p className="text-sm text-text-light mb-4">Continue as guest to browse public content</p>
-                <Link
-                  href="/"
-                  className="text-primary-green hover:text-primary-green-dark font-medium"
-                >
-                  Browse as Guest →
-                </Link>
+                <div className="flex items-center justify-center gap-4">
+                  <Link
+                    href="/"
+                    className="text-blue-400 hover:underline hover:text-blue-600 font-medium"
+                  >
+                    Browse as Guest →
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

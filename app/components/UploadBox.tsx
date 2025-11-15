@@ -1,3 +1,11 @@
+
+
+
+
+
+
+
+
 "use client";
 
 import React, { useState } from "react";
@@ -186,43 +194,69 @@ export default function UploadBox() {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6">
-      {/* File Upload Area */}
-      <div
-        className={`
-          border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300
-          ${isDragOver 
-            ? 'border-blue-500 bg-blue-50 scale-105' 
-            : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'
-          }
-          ${isUploading ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}
-        `}
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => !isUploading && document.getElementById('fileInput')?.click()}
-      >
-        <div className="space-y-4">
-          <div className="text-4xl">📄</div>
-          <div>
-            <p className="text-lg font-medium text-gray-700">
-              {isUploading ? "Processing..." : "Drop your PDF or image here"}
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Or click to browse files (Max 10MB)
+    <>
+      <section className="py-16 bg-primary-bg">
+        <div className="max-w-4xl mx-auto px-6">
+          {/* Section Header */}
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-text-dark mb-4">
+              Upload Your Educational Content
+            </h2>
+            <p className="text-lg text-text-light">
+              Share your study materials, research papers, or educational resources with the community
             </p>
           </div>
-          
-          <input
-            id="fileInput"
-            type="file"
-            accept=".pdf,image/*"
-            onChange={handleSelect}
-            className="hidden"
-            disabled={isUploading}
-          />
-        </div>
-      </div>
+
+          {/* Upload Area */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <div
+              className={`relative border-3 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
+                isDragOver
+                  ? "border-primary-green bg-primary-green/5 scale-105"
+                  : "border-gray-300 hover:border-primary-green hover:bg-primary-green/5"
+              } ${isUploading ? "pointer-events-none opacity-60" : ""}`}
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+            >
+              <label
+                htmlFor="fileInput"
+                className="cursor-pointer block"
+              >
+                {isUploading ? (
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="loading-spinner"></div>
+                    <span className="text-primary-green font-medium">Processing your file...</span>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="text-6xl text-primary-green animate-bounce-gentle">📁</div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-text-dark mb-2">
+                        Drop your files here or click to browse
+                      </h3>
+                      <p className="text-text-light">
+                        Support for PDF files • Max file size: 10MB
+                      </p>
+                    </div>
+                    <div className="flex justify-center">
+                      <span className="px-6 py-3 bg-primary-green text-white rounded-full font-medium hover:bg-primary-green-dark transform hover:-translate-y-1 transition-all duration-300">
+                        Choose File
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </label>
+
+              <input
+                id="fileInput"
+                type="file"
+                className="hidden"
+                onChange={handleSelect}
+                accept=".pdf"
+                disabled={isUploading}
+              />
+            </div>
 
       {/* Progress Message */}
       {message && (
