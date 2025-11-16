@@ -53,18 +53,17 @@ export default function UploadLabelsForm({ onSubmit, onCancel, fileName, fileSiz
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-      <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-text-dark mb-6">Add File Information</h2>
-        
-        {/* File Info */}
-        <div className="bg-primary-bg rounded-lg p-4 mb-6">
-          <h3 className="font-semibold text-primary-green mb-2">File Details</h3>
-          <p className="text-text-dark"><strong>Name:</strong> {fileName}</p>
-          <p className="text-text-light"><strong>Size:</strong> {(fileSize / 1024 / 1024).toFixed(2)} MB</p>
-        </div>
+    <div>
+      <h2 className="text-2xl font-bold text-text-dark mb-6">Add File Information</h2>
+      
+      {/* File Info */}
+      <div className="bg-primary-bg rounded-lg p-4 mb-6">
+        <h3 className="font-semibold text-primary-green mb-2">File Details</h3>
+        <p className="text-text-dark"><strong>Name:</strong> {fileName}</p>
+        <p className="text-text-light"><strong>Size:</strong> {(fileSize / 1024 / 1024).toFixed(2)} MB</p>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-text-dark font-medium mb-2">Class</label>
@@ -142,7 +141,7 @@ export default function UploadLabelsForm({ onSubmit, onCancel, fileName, fileSiz
                 className="px-3 py-2 bg-primary-green text-white rounded-lg hover:bg-primary-green-dark transition-colors duration-300 flex items-center justify-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd"></path>
                 </svg>
               </button>
             </div>
@@ -160,7 +159,7 @@ export default function UploadLabelsForm({ onSubmit, onCancel, fileName, fileSiz
                     className="ml-1 text-primary-green hover:text-red-500 flex items-center justify-center"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"></path>
                     </svg>
                   </button>
                 </span>
@@ -200,7 +199,6 @@ export default function UploadLabelsForm({ onSubmit, onCancel, fileName, fileSiz
             </div>
           </div>
         </form>
-      </div>
     </div>
   );
 }

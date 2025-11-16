@@ -137,8 +137,8 @@ export default function UploadBox() {
 
       {/* Labels form modal */}
       {showLabelsForm && selectedFile && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded p-4 w-full max-w-md">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <UploadLabelsForm
               fileName={selectedFile.name}
               fileSize={selectedFile.size}
