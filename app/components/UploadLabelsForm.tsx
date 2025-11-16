@@ -138,9 +138,12 @@ export default function UploadLabelsForm({ onSubmit, onCancel, fileName, fileSiz
               <button
                 type="button"
                 onClick={handleAddTag}
-                className="px-4 py-3 bg-primary-green text-white rounded-lg hover:bg-primary-green-dark transition-colors duration-300"
+                aria-label="Add tag"
+                className="px-3 py-2 bg-primary-green text-white rounded-lg hover:bg-primary-green-dark transition-colors duration-300 flex items-center justify-center"
               >
-                Add
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                </svg>
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -149,13 +152,16 @@ export default function UploadLabelsForm({ onSubmit, onCancel, fileName, fileSiz
                   key={index}
                   className="inline-flex items-center px-3 py-1 bg-primary-green/10 text-primary-green rounded-full text-sm"
                 >
-                  {tag}
+                  <span className="mr-2">{tag}</span>
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="ml-2 text-primary-green hover:text-red-500"
+                    aria-label={`Remove ${tag}`}
+                    className="ml-1 text-primary-green hover:text-red-500 flex items-center justify-center"
                   >
-                    ×
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
                   </button>
                 </span>
               ))}
@@ -175,21 +181,23 @@ export default function UploadLabelsForm({ onSubmit, onCancel, fileName, fileSiz
             </label>
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors duration-300"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!labels.subject || !labels.topic}
-              className="flex-1 px-6 py-3 bg-primary-green text-white rounded-lg hover:bg-primary-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
-            >
-              Save & Upload
-            </button>
+          <div className="pt-4">
+            <div className="border border-gray-200 rounded-lg p-4 bg-white flex gap-4">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="flex-1 px-6 py-3 border-2 border-[#4A7766] text-[#4A7766] rounded-lg hover:bg-[#4A7766] hover:text-white transition-colors duration-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!labels.subject || !labels.topic}
+                className="flex-1 px-6 py-3 bg-[#4A7766] text-white rounded-lg hover:bg-[#3C6757] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+              >
+                Save & Upload
+              </button>
+            </div>
           </div>
         </form>
       </div>
