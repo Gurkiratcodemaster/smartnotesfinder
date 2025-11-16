@@ -13,7 +13,7 @@ export default function UploadBox() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // -------------------------------
-  // Upload handler → Calls /api/upload
+  // 🔥 Upload handler
   // -------------------------------
   const processFileUpload = async (file: File, labels: UploadLabels) => {
     try {
@@ -26,8 +26,8 @@ export default function UploadBox() {
       formData.append("labels", JSON.stringify(labels || {}));
 
       const token = localStorage.getItem("userToken");
-      const headers: Record<string, string> = {};
 
+      const headers: Record<string, string> = {};
       if (token) headers.Authorization = `Bearer ${token}`;
 
       const response = await fetch("/api/upload", {
@@ -37,6 +37,7 @@ export default function UploadBox() {
       });
 
       const result = await response.json();
+
       if (!response.ok) throw new Error(result.error || "Upload failed");
 
       setMessage("File uploaded & text extracted!");
@@ -51,7 +52,7 @@ export default function UploadBox() {
   };
 
   // -------------------------------
-  // File Validation
+  // File validations & UI
   // -------------------------------
   const handleFileSelection = (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
@@ -93,6 +94,7 @@ export default function UploadBox() {
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6">
+      {/* Upload Box */}
       <div
         className={`border-2 border-dashed p-8 rounded-lg text-center ${
           isDragOver ? "bg-blue-100 border-blue-500" : "border-gray-400"
@@ -117,14 +119,19 @@ export default function UploadBox() {
         <p className="text-sm text-gray-500">OR click to select</p>
       </div>
 
+      {/* Messages */}
       {message && (
-        <div className="mt-4 p-3 bg-gray-100 rounded border">{message}</div>
+        <div className="mt-4 p-3 bg-gray-100 rounded border">
+          {message}
+        </div>
       )}
 
       {isUploading && <div className="mt-3">Uploading...</div>}
 
+      {/* Extracted text */}
       {ocrText && <TextDisplay text={ocrText} />}
 
+      {/* Labels Form */}
       {showLabelsForm && selectedFile && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-white rounded p-4 w-full max-w-md">

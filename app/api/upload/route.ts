@@ -48,29 +48,28 @@ export async function POST(req: NextRequest) {
       labels = {};
     }
 
-    // -----------------------------
-    // 🔥 OCR SPACE EXTRACTION
-    // -----------------------------
-    console.log("Sending file to OCR.Space...");
-
-    const ocrForm = new FormData();
-    ocrForm.append("file", new Blob([fileBuffer], { type: file.type }));
-    ocrForm.append("OCREngine", "2");
-
-    const ocrResponse = await fetch("https://api.ocr.space/parse/image", {
-      method: "POST",
-      body: ocrForm,
-      headers: {
-        apikey: "helloworld",
-      },
-    });
-
-    const ocrResult = await ocrResponse.json();
+    // -----------------------------------
+    // 🔥 TEXT EXTRACTION (Local)
+    // -----------------------------------
     let extractedText = "";
 
-    if (ocrResult?.ParsedResults?.[0]?.ParsedText) {
-      extractedText = ocrResult.ParsedResults[0].ParsedText;
+    if (file.type === "application/pdf") {
+      console.log("Extracting PDF text...");
+      try {
+        // Using require for Node.js compatibility
+        const pdfParse = require("pdf-parse");
+        const pdfData = await pdfParse(fileBuffer);
+        extractedText = pdfData.text || "";
+      } catch (error) {
+        console.error("PDF extraction error:", error);
+        extractedText = ""; // Fallback to empty string
+      }
     }
+    else if (file.type === "text/plain") {
+      extractedText = fileBuffer.toString("utf8");
+    }
+    // Note: Image OCR was removed as cloud dependencies were removed
+    // Can be added back with local libraries if needed
 
     // Save entry in MongoDB
     const fileRecord = await FileModel.create({
@@ -88,7 +87,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      message: "Upload & OCR completed.",
+      message: "File uploaded & text extracted successfully!",
       fileId: fileRecord.id,
       fileName,
       extractedText,
