@@ -12,9 +12,9 @@ export default function UploadBox() {
   const [showLabelsForm, setShowLabelsForm] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // -------------------------------
-  // Upload handler → Calls /api/upload
-  // -------------------------------
+  // --------------------------------------
+  // 🔥 MAIN UPLOAD HANDLER
+  // --------------------------------------
   const processFileUpload = async (file: File, labels: UploadLabels) => {
     try {
       setIsUploading(true);
@@ -27,9 +27,9 @@ export default function UploadBox() {
 
       const token = localStorage.getItem("userToken");
       const headers: Record<string, string> = {};
-
       if (token) headers.Authorization = `Bearer ${token}`;
 
+      // Send to backend
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
@@ -37,10 +37,14 @@ export default function UploadBox() {
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Upload failed");
+
+      if (!response.ok) {
+        throw new Error(result.error || "Upload failed");
+      }
 
       setMessage("File uploaded & text extracted!");
       setOcrText(result.extractedText || "No text extracted.");
+
     } catch (err: any) {
       console.error(err);
       setMessage("Upload failed: " + err.message);
@@ -50,9 +54,9 @@ export default function UploadBox() {
     }
   };
 
-  // -------------------------------
+  // --------------------------------------
   // File Validation
-  // -------------------------------
+  // --------------------------------------
   const handleFileSelection = (file: File) => {
     if (file.size > 10 * 1024 * 1024) {
       setMessage("File too large. Max 10MB.");
@@ -68,7 +72,7 @@ export default function UploadBox() {
 
     const isValid =
       allowed.includes(file.type) ||
-      file.name.toLowerCase().match(/\.(pdf|jpg|jpeg|png|txt)$/);
+      /\.(pdf|jpg|jpeg|png|txt)$/i.test(file.name);
 
     if (!isValid) {
       setMessage("Invalid file type");
@@ -93,6 +97,8 @@ export default function UploadBox() {
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6">
+      
+      {/* Upload Box */}
       <div
         className={`border-2 border-dashed p-8 rounded-lg text-center ${
           isDragOver ? "bg-blue-100 border-blue-500" : "border-gray-400"
@@ -117,14 +123,19 @@ export default function UploadBox() {
         <p className="text-sm text-gray-500">OR click to select</p>
       </div>
 
+      {/* Status Message */}
       {message && (
-        <div className="mt-4 p-3 bg-gray-100 rounded border">{message}</div>
+        <div className="mt-4 p-3 bg-gray-100 rounded border">
+          {message}
+        </div>
       )}
 
       {isUploading && <div className="mt-3">Uploading...</div>}
 
+      {/* Extracted Text Viewer */}
       {ocrText && <TextDisplay text={ocrText} />}
 
+      {/* Labels form modal */}
       {showLabelsForm && selectedFile && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl shadow-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
