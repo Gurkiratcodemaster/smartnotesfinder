@@ -5,73 +5,11 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// Function to generate README content for uploaded files
-function generateReadme(fileRecord: any, labels: any, userId: string | null): string {
-  const timestamp = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
-  return `# ${fileRecord.original_name}
-
-## Document Information
-
-| Property | Value |
-|----------|-------|
-| **File Name** | ${fileRecord.original_name} |
-| **File ID** | ${fileRecord.id} |
-| **Upload Date** | ${timestamp} |
-| **File Size** | ${(fileRecord.file_size / 1024).toFixed(2)} KB |
-| **Uploaded By** | ${userId ? 'Registered User' : 'Anonymous'} |
-
-## Metadata
-
-### Subject
-${labels?.subject || 'Not specified'}
-
-### Topic
-${labels?.topic || 'Not specified'}
-
-### Class Level
-${labels?.class || 'Not specified'}
-
-### Semester
-${labels?.semester || 'Not specified'}
-
-### Tags
-${labels?.tags && Array.isArray(labels.tags) ? labels.tags.join(', ') : 'No tags'}
-
-## Description
-
-This is an educational resource document. You can use this README file to share information about the document with others.
-
-## Sharing
-
-You can share this document using the following link:
-\`\`\`
-${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/file/${fileRecord.id}/readme
-\`\`\`
-
-## Access Information
-
-- This is a **public README file** that can be shared with anyone
-- The link allows users to view document metadata and information
-- Only authorized users can download or access the full document
-
----
-
-*This README was automatically generated on ${timestamp}*
-`;
-}
-
 export async function POST(req: NextRequest) {
   try {
     console.log("Upload request received");
 
-    // Optional JWT Authentication
+    // Optional Auth
     const authHeader = req.headers.get("authorization");
     let userId = "anonymous";
 
@@ -81,11 +19,11 @@ export async function POST(req: NextRequest) {
         const decoded: any = jwt.verify(token, JWT_SECRET);
         userId = decoded?.userId ?? "anonymous";
       } catch {
-        console.warn("Invalid JWT – using anonymous");
+        console.warn("Invalid JWT token, using anonymous");
       }
     }
 
-    // Read Form Data
+    // Read form data
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const labelsString = formData.get("labels") as string;
@@ -94,8 +32,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    const fileBuffer = Buffer.from(await file.arrayBuffer());
+    const arrayBuffer = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(arrayBuffer);
 
+    // Save file locally
     const fileName = LocalFileStorage.generateFileName(file.name, file.type);
     const filePath = await LocalFileStorage.saveFile(
       fileBuffer,
@@ -103,6 +43,7 @@ export async function POST(req: NextRequest) {
       file.name
     );
 
+    // Parse labels JSON
     let labels = {};
     try {
       labels = labelsString ? JSON.parse(labelsString) : {};
@@ -110,30 +51,32 @@ export async function POST(req: NextRequest) {
       labels = {};
     }
 
-    // -----------------------------------
-    // 🔥 TEXT EXTRACTION (Local)
-    // -----------------------------------
-    let extractedText = "";
+    // -----------------------------
+    // 🔥 OCR SPACE (PDF + IMAGE)
+    // -----------------------------
+    // -----------------------------
+// 🔥 PYTHON OCR SERVER CALL
+// -----------------------------
 
-    if (file.type === "application/pdf") {
-      console.log("Extracting PDF text...");
-      try {
-        // Using require for Node.js compatibility
-        const pdfParse = require("pdf-parse");
-        const pdfData = await pdfParse(fileBuffer);
-        extractedText = pdfData.text || "";
-      } catch (error) {
-        console.error("PDF extraction error:", error);
-        extractedText = ""; // Fallback to empty string
-      }
-    }
-    else if (file.type === "text/plain") {
-      extractedText = fileBuffer.toString("utf8");
-    }
-    // Note: Image OCR was removed as cloud dependencies were removed
-    // Can be added back with local libraries if needed
+console.log("Sending file to Python OCR server...");
 
-    // Save entry in MongoDB
+const pythonForm = new FormData();
+pythonForm.append("file", new Blob([arrayBuffer], { type: file.type }));
+
+const pythonRes = await fetch("http://127.0.0.1:8000/extract", {
+  method: "POST",
+  body: pythonForm,
+});
+
+if (!pythonRes.ok)
+  throw new Error("Python OCR server failed");
+
+const pythonData = await pythonRes.json();
+
+const extractedText = pythonData?.text || "No text extracted.";
+
+
+    // Save to DB
     const fileRecord = await FileModel.create({
       file_name: fileName,
       original_name: file.name,
@@ -148,36 +91,15 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Generate README file for this upload
-    const readmeContent = generateReadme(fileRecord, labels, userId);
-    const readmeFileName = `${fileName}.README.md`;
-    const readmeBuffer = Buffer.from(readmeContent, 'utf-8');
-    const readmePath = await LocalFileStorage.saveFile(readmeBuffer, readmeFileName, readmeFileName);
-
-    // Update file record with README path
-    await FileModel.updateById(fileRecord.id, {
-      metadata: {
-        ...fileRecord.metadata,
-        readmePath,
-      }
-    });
-
-    // Generate shareable link
-    const shareLink = `/file/${fileRecord.id}/readme`;
-
     return NextResponse.json({
-      message: "File uploaded & text extracted successfully!",
+      message: "Uploaded & OCR completed!",
       fileId: fileRecord.id,
-      shareLink: shareLink,
-      readmeUrl: shareLink,
-      fileName: fileName,
+      extractedText,
       fileUrl: LocalFileStorage.getFileUrl(fileName),
-      originalName: file.name,
-      size: file.size,
-      type: file.type,
     });
+
   } catch (err: any) {
-    console.error("ERROR IN UPLOAD:", err);
+    console.error("UPLOAD ERROR:", err);
     return NextResponse.json(
       { error: "Upload failed", detail: err.message },
       { status: 500 }
