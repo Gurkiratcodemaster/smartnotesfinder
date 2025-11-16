@@ -15,107 +15,44 @@ export default function UploadBox() {
     try {
       setIsUploading(true);
       setShowLabelsForm(false);
-      setMessage("Requesting upload URL...");
+      setMessage("Uploading file...");
       setOcrText("");
 
-      // 1. Ask backend for presigned upload URL (Cloudflare R2) or development-mode response
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: JSON.stringify({
-          fileName: file.name,
-          fileSize: file.size,
-          mimeType: file.type,
-          labels,
-        }),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const text = await res.text();
-      if (!res.ok) {
-        throw new Error(`Upload URL request failed: ${res.status} ${text}`);
-      }
-      if (!text) {
-        throw new Error("Upload endpoint returned an empty response");
-      }
-
-      let data: { uploadUrl?: string; fileId?: string; message?: string };
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        throw new Error("Upload endpoint returned invalid JSON");
-      }
-
-      const uploadUrl = data.uploadUrl;
-      const fileId = data.fileId;
-
-      if (!fileId) {
-        throw new Error("fileId missing in upload endpoint response");
-      }
-
-      // Prepare form data for OCR endpoint
+      // Prepare form data for direct file upload
       const formData = new FormData();
       formData.append("file", file);
-      // Pass both keys; server code forwards file_id to python
-      formData.append("fileId", fileId);
       formData.append("labels", JSON.stringify(labels || {}));
 
-      // 2. If presigned URL is development-mode -> skip PUT and run OCR immediately
-      if (!uploadUrl || uploadUrl === "development-mode") {
-        setMessage("Development mode: processing file directly...");
-        const ocrRes = await fetch("/api/extract-ocr", {
-          method: "POST",
-          body: formData,
-        });
-
-        const ocrData = await ocrRes.json();
-        if (!ocrRes.ok) {
-          const serverErr = ocrData?.error || ocrData?.detail || JSON.stringify(ocrData);
-          setMessage("OCR failed: " + serverErr);
-          setOcrText("");
-          return;
-        }
-
-        setOcrText(ocrData.text || "No text found.");
-        setMessage("File processed successfully! Ready for search.");
-        return;
+      // Get authentication token if available
+      const token = localStorage.getItem('userToken');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
       }
+      // Note: Don't set Content-Type - let browser set it automatically for FormData
 
-      // 3. Otherwise upload file to presigned URL (Cloudflare R2)
-      setMessage("Uploading to Cloudflare R2...");
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-        headers: {
-          "Content-Type": file.type || "application/octet-stream",
-        },
-      });
-
-      if (!uploadResponse.ok) {
-        const text = await uploadResponse.text();
-        throw new Error("Failed to upload to Cloudflare R2: " + text);
-      }
-
-      setMessage("File uploaded successfully! Processing file and extracting text...");
-
-      // 4. Tell local Next backend to run OCR and save metadata
-      const ocrRes = await fetch("/api/extract-ocr", {
+      // Upload file directly to our upload endpoint
+      const uploadResponse = await fetch("/api/upload", {
         method: "POST",
         body: formData,
+        headers,
       });
 
-      const ocrData = await ocrRes.json();
-      if (!ocrRes.ok) {
-        const serverErr = ocrData?.error || ocrData?.detail || JSON.stringify(ocrData);
-        setMessage("OCR failed: " + serverErr);
-        setOcrText("");
-        return;
+      const uploadResult = await uploadResponse.json();
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResult.error || uploadResult.detail || 'Unknown error'}`);
       }
 
-      setOcrText(ocrData.text || "No text found.");
-      setMessage("File processed successfully! Ready for search.");
-    } catch (err: any) {
-      console.error(err);
-      setMessage("Error: " + (err?.message ?? String(err)));
+      setMessage(`File uploaded successfully! ${uploadResult.isAuthenticated ? 'Saved to your account.' : 'Uploaded anonymously.'}`);
+      
+      // For now, we'll skip OCR since it was removed from the system
+      // If you want to add text extraction later, you can implement it here
+      setOcrText("Text extraction feature not available in local mode.");
+
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      setMessage("Upload failed: " + (error.message || error.toString()));
+      setOcrText("");
     } finally {
       setIsUploading(false);
       setSelectedFile(null);
@@ -127,11 +64,26 @@ export default function UploadBox() {
       setMessage("File too large. Maximum size is 10MB.");
       return;
     }
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    if (!isPdf) {
-      setMessage("Only PDF files are supported.");
+    
+    // Accept more file types now that we're not limited to OCR
+    const allowedTypes = [
+      'application/pdf',
+      'image/jpeg',
+      'image/jpg', 
+      'image/png',
+      'text/plain',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    const isValidType = allowedTypes.includes(file.type) || 
+                       file.name.toLowerCase().match(/\.(pdf|jpg|jpeg|png|txt|doc|docx)$/);
+    
+    if (!isValidType) {
+      setMessage("Supported file types: PDF, Images (JPG, PNG), Text files, Word documents");
       return;
     }
+    
     setSelectedFile(file);
     setShowLabelsForm(true);
     setMessage("");
@@ -188,20 +140,23 @@ export default function UploadBox() {
         onClick={() => !isUploading && document.getElementById('fileInput')?.click()}
       >
         <div className="space-y-4">
-          <div className="text-4xl">📄</div>
+          <div className="text-4xl">📁</div>
           <div>
             <p className="text-lg font-medium text-gray-700">
-              {isUploading ? "Processing..." : "Drop your PDF here"}
+              {isUploading ? "Uploading..." : "Drop your files here"}
             </p>
             <p className="text-sm text-gray-500 mt-2">
               Or click to browse files (Max 10MB)
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              Supports: PDF, Images, Text files, Word documents
             </p>
           </div>
           
           <input
             id="fileInput"
             type="file"
-            accept=".pdf"
+            accept=".pdf,.jpg,.jpeg,.png,.txt,.doc,.docx"
             onChange={handleSelect}
             className="hidden"
             disabled={isUploading}

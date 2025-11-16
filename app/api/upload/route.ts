@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import File from "@/app/models/File";
+import FileModel from "@/app/models/File";
 import LocalFileStorage from "@/lib/fileStorage";
 import jwt from "jsonwebtoken";
 
@@ -7,18 +7,25 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function POST(req: NextRequest) {
   try {
-    // Check authentication
+    // Log request details for debugging
+    console.log('Upload request received');
+    console.log('Content-Type:', req.headers.get('content-type'));
+    console.log('Method:', req.method);
+    
+    // Check authentication (optional for uploads)
     const authHeader = req.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
-
-    const token = authHeader.split(" ")[1];
-    let decoded;
-    try {
-      decoded = jwt.verify(token, JWT_SECRET) as any;
-    } catch (error) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    let decoded = null;
+    let userId = null;
+    
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+      try {
+        decoded = jwt.verify(token, JWT_SECRET) as any;
+        userId = decoded.userId;
+      } catch (error) {
+        // Token is invalid, but we'll allow anonymous upload
+        console.log("Invalid token provided, proceeding with anonymous upload");
+      }
     }
 
     const formData = await req.formData();
@@ -54,7 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Save file metadata to database
-    const fileRecord = await File.create({
+    const fileRecord = await FileModel.create({
       file_name: fileName,
       original_name: file.name,
       file_size: file.size,
@@ -63,8 +70,9 @@ export async function POST(req: NextRequest) {
       content: '', // Will be populated by text extraction if needed
       labels: parsedLabels,
       metadata: {
-        uploadedBy: decoded.userId,
-        uploadDate: new Date().toISOString()
+        uploadedBy: userId || 'anonymous',
+        uploadDate: new Date().toISOString(),
+        isAnonymous: !userId
       }
     });
 
@@ -75,7 +83,9 @@ export async function POST(req: NextRequest) {
       fileUrl: LocalFileStorage.getFileUrl(fileName),
       originalName: file.name,
       size: file.size,
-      type: file.type
+      type: file.type,
+      uploadedBy: userId || 'anonymous',
+      isAuthenticated: !!userId
     });
 
   } catch (error: any) {
