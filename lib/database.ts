@@ -84,6 +84,7 @@ export async function initializeDatabase() {
         rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
         review TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users (id),
         FOREIGN KEY (file_id) REFERENCES files (id),
         UNIQUE(user_id, file_id)
@@ -144,6 +145,44 @@ export class Database {
 
   static async getUserByUsername(username: string) {
     return getAsync(`SELECT * FROM users WHERE username = ?`, [username]);
+  }
+
+  static async updateUser(id: string, updateData: any) {
+    const fields = [];
+    const values = [];
+
+    for (const [key, value] of Object.entries(updateData)) {
+      if (key !== 'id' && value !== undefined) {
+        fields.push(`${key} = ?`);
+        if (typeof value === 'object' && value !== null) {
+          values.push(JSON.stringify(value));
+        } else {
+          values.push(value);
+        }
+      }
+    }
+
+    if (fields.length === 0) throw new Error('No fields to update');
+
+    fields.push('updated_at = ?');
+    values.push(new Date().toISOString());
+    values.push(id);
+
+    const query = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+    return runAsync(query, values);
+  }
+
+  static async deleteUser(id: string) {
+    return runAsync(`DELETE FROM users WHERE id = ?`, [id]);
+  }
+
+  static async getUsers(limit: number = 50, offset: number = 0) {
+    return allAsync(`
+      SELECT id, username, email, user_type, profile, created_at, updated_at 
+      FROM users 
+      ORDER BY created_at DESC 
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
   }
 
   // -------- FILES --------
@@ -278,6 +317,51 @@ export class Database {
       `SELECT AVG(rating) as average, COUNT(*) as count FROM ratings WHERE file_id = ?`,
       [fileId]
     );
+  }
+
+  static async getRatingByFileAndUser(fileId: string, userId: string) {
+    return getAsync(`SELECT * FROM ratings WHERE file_id = ? AND user_id = ?`, [fileId, userId]);
+  }
+
+  static async getRatingsByFile(fileId: string) {
+    return allAsync(`SELECT * FROM ratings WHERE file_id = ? ORDER BY created_at DESC`, [fileId]);
+  }
+
+  static async updateRating(id: string, updateData: any) {
+    const fields = [];
+    const values = [];
+
+    for (const [key, value] of Object.entries(updateData)) {
+      if (key !== 'id' && value !== undefined) {
+        fields.push(`${key} = ?`);
+        values.push(value);
+      }
+    }
+
+    if (fields.length === 0) throw new Error('No fields to update');
+
+    fields.push('updated_at = ?');
+    values.push(new Date().toISOString());
+    values.push(id);
+
+    const query = `UPDATE ratings SET ${fields.join(', ')} WHERE id = ?`;
+    return runAsync(query, values);
+  }
+
+  static async deleteRating(id: string) {
+    return runAsync(`DELETE FROM ratings WHERE id = ?`, [id]);
+  }
+
+  static async getRatingCount(fileId: string) {
+    return getAsync(`SELECT COUNT(*) as count FROM ratings WHERE file_id = ?`, [fileId]);
+  }
+
+  static async getRatings(limit: number = 50, offset: number = 0) {
+    return allAsync(`
+      SELECT * FROM ratings 
+      ORDER BY created_at DESC 
+      LIMIT ? OFFSET ?
+    `, [limit, offset]);
   }
 
   // -------- SESSIONS --------

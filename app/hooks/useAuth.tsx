@@ -13,7 +13,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string, userData: User) => void;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
 }
@@ -45,14 +45,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = (newToken: string, userData: User) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      setToken(newToken);
-      setUser(userData);
-      localStorage.setItem('userToken', newToken);
-      localStorage.setItem('userData', JSON.stringify(userData));
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setToken(data.token);
+        setUser(data.user);
+        localStorage.setItem('userToken', data.token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        return true;
+      } else {
+        return false;
+      }
     } catch (error) {
-      console.error('Error saving user data:', error);
+      console.error('Error during login:', error);
+      return false;
     }
   };
 

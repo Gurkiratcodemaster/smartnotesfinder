@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
+import { useAuth } from "../hooks/useAuth";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -11,6 +13,15 @@ export default function LoginPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const { login, user } = useAuth();
+  const router = useRouter();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push("/");
+    }
+  }, [user, router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -26,23 +37,14 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Store user session/token (implement as needed)
-        localStorage.setItem("userToken", data.token);
-        window.location.href = "/";
+      const success = await login(formData.email, formData.password);
+      if (success) {
+        router.push("/");
       } else {
-        setError(data.error || "Login failed");
+        setError("Invalid credentials");
       }
     } catch (error) {
-      setError("Network error. Please try again.");
+      setError("Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
