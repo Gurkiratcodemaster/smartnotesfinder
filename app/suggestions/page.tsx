@@ -214,12 +214,12 @@ export default function SuggestionsPage() {
                     )}
                   </div>
                   
-                  <button
-                    onClick={() => window.open(suggestion.cloudflareUrl, '_blank')}
-                    className="px-6 py-2 bg-primary-green text-white rounded-lg hover:bg-primary-green-dark transform hover:-translate-y-1 transition-all duration-300"
+                  <a
+                    href={suggestion.cloudflareUrl}
+                    className="px-6 py-2 bg-[#4A7766] text-white rounded-lg hover:bg-[#3C6757] transform hover:-translate-y-1 transition-all duration-300 inline-block"
                   >
-                    View File
-                  </button>
+                    View README
+                  </a>
                 </div>
               </div>
             ))}
