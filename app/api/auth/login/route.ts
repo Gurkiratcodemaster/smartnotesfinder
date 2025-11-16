@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         id: user.id,
         username: user.username,
         email: user.email,
-        userType: user.userType || 'student',
+        userType: user.user_type || 'student',
         profile: user.profile || {},
       }
     });

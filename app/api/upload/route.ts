@@ -5,6 +5,68 @@ import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
+// Function to generate README content for uploaded files
+function generateReadme(fileRecord: any, labels: any, userId: string | null): string {
+  const timestamp = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  return `# ${fileRecord.original_name}
+
+## Document Information
+
+| Property | Value |
+|----------|-------|
+| **File Name** | ${fileRecord.original_name} |
+| **File ID** | ${fileRecord.id} |
+| **Upload Date** | ${timestamp} |
+| **File Size** | ${(fileRecord.file_size / 1024).toFixed(2)} KB |
+| **Uploaded By** | ${userId ? 'Registered User' : 'Anonymous'} |
+
+## Metadata
+
+### Subject
+${labels?.subject || 'Not specified'}
+
+### Topic
+${labels?.topic || 'Not specified'}
+
+### Class Level
+${labels?.class || 'Not specified'}
+
+### Semester
+${labels?.semester || 'Not specified'}
+
+### Tags
+${labels?.tags && Array.isArray(labels.tags) ? labels.tags.join(', ') : 'No tags'}
+
+## Description
+
+This is an educational resource document. You can use this README file to share information about the document with others.
+
+## Sharing
+
+You can share this document using the following link:
+\`\`\`
+${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/file/${fileRecord.id}/readme
+\`\`\`
+
+## Access Information
+
+- This is a **public README file** that can be shared with anyone
+- The link allows users to view document metadata and information
+- Only authorized users can download or access the full document
+
+---
+
+*This README was automatically generated on ${timestamp}*
+`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     // Log request details for debugging
@@ -76,9 +138,28 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // Generate README file for this upload
+    const readmeContent = generateReadme(fileRecord, parsedLabels, userId);
+    const readmeFileName = `${fileName}.README.md`;
+    const readmeBuffer = Buffer.from(readmeContent, 'utf-8');
+    const readmePath = await LocalFileStorage.saveFile(readmeBuffer, readmeFileName, readmeFileName);
+
+    // Update file record with README path
+    await FileModel.updateById(fileRecord.id, {
+      metadata: {
+        ...fileRecord.metadata,
+        readmePath,
+      }
+    });
+
+    // Generate shareable link
+    const shareLink = `/file/${fileRecord.id}/readme`;
+
     return NextResponse.json({
       message: "File uploaded successfully",
       fileId: fileRecord.id,
+      shareLink: shareLink,
+      readmeUrl: shareLink,
       fileName: fileName,
       fileUrl: LocalFileStorage.getFileUrl(fileName),
       originalName: file.name,
