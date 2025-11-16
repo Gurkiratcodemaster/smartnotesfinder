@@ -1,8 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import Image from "next/image";
 
 export default function HeroSection() {
+  const scrollToFeatures = () => {
+    const featuresSection = document.getElementById('features-section');
+    if (featuresSection) {
+      featuresSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <section className="min-h-[80vh] flex items-center justify-center px-6 py-16">
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
@@ -14,9 +22,10 @@ export default function HeroSection() {
             <br />
             Like Never Before
           </h1>
-          <p className="text-lg text-text-light leading-relaxed">
-            "Education is the most powerful weapon which you can use to change the world." 
-            - Nelson Mandela
+          <p className="text-2xl md:text-3xl font-semibold text-[#4A7766] leading-relaxed italic mb-6 border-l-4 border-[#4A7766] pl-6 py-4">
+            "Education is the most powerful weapon which you can use to change the world."
+            <br />
+            <span className="text-base font-normal text-text-light mt-2 block">- Nelson Mandela</span>
           </p>
           <p className="text-base text-text-light">
             Upload, search, and discover educational resources with AI-powered semantic search. 
@@ -24,14 +33,12 @@ export default function HeroSection() {
             and academic content.
           </p>
           <div className="pt-4">
-            <div className="inline-flex items-center gap-4 p-4 rounded-2xl border-2 border-[#4A7766] bg-white shadow-sm">
-              <button className="px-8 py-3 bg-[#4A7766] text-white rounded-full font-semibold hover:bg-[#3C6757] hover:shadow-[0_0_20px_rgba(74,119,102,0.45)] transform hover:-translate-y-1 transition-all duration-300">
-                Start Exploring
-              </button>
-              <button className="px-8 py-3 bg-[#4A7766] text-white rounded-full font-semibold hover:bg-[#3C6757] hover:shadow-[0_0_20px_rgba(74,119,102,0.45)] transform hover:-translate-y-1 transition-all duration-300">
-                Upload Content
-              </button>
-            </div>
+            <button 
+              onClick={scrollToFeatures}
+              className="px-8 py-3 bg-[#4A7766] text-white rounded-full font-semibold hover:bg-[#3C6757] hover:text-[#e8f5f2] hover:shadow-[0_0_30px_rgba(74,119,102,0.6)] transform hover:-translate-y-1 transition-all duration-300 active:scale-95"
+            >
+              Start Exploring
+            </button>
           </div>
         </div>
 

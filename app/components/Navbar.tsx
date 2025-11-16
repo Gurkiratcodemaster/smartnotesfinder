@@ -147,28 +147,28 @@ export default function Navbar() {
           <div className="flex flex-col space-y-3 pt-4">
             <Link 
               href="/" 
-              className="text-text-dark hover:text-primary-green transition-colors px-4 py-2 font-bold"
+              className="text-text-dark hover:text-primary-green hover:underline transition-all px-4 py-2 font-bold"
               onClick={() => setIsMenuOpen(false)}
             >
               Home
             </Link>
             <Link 
               href="/search" 
-              className="text-text-dark hover:text-primary-green transition-colors px-4 py-2 font-bold"
+              className="text-text-dark hover:text-primary-green hover:underline transition-all px-4 py-2 font-bold"
               onClick={() => setIsMenuOpen(false)}
             >
               Search
             </Link>
             <Link 
               href="/suggestions" 
-              className="text-text-dark hover:text-primary-green transition-colors px-4 py-2 font-bold"
+              className="text-text-dark hover:text-primary-green hover:underline transition-all px-4 py-2 font-bold"
               onClick={() => setIsMenuOpen(false)}
             >
               Suggestions
             </Link>
             <Link 
               href="/about" 
-              className="text-text-dark hover:text-primary-green transition-colors px-4 py-2 font-bold"
+              className="text-text-dark hover:text-primary-green hover:underline transition-all px-4 py-2 font-bold"
               onClick={() => setIsMenuOpen(false)}
             >
               About

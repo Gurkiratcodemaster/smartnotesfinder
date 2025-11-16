@@ -29,7 +29,7 @@ export default function FeatureSection() {
   ];
 
   return (
-    <section className="py-20 bg-primary-bg">
+    <section id="features-section" className="py-20 bg-primary-bg">
       <div className="max-w-7xl mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-16 animate-fade-in">

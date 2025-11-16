@@ -2,6 +2,7 @@ import Navbar from "./components/Navbar";
 import HeroSection from "./components/HeroSection";
 import FeatureSection from "./components/FeatureSection";
 import UploadBox from "./components/UploadBox";
+import Footer from "./components/Footer";
 
 export default function HomePage() {
   return (
@@ -12,6 +13,7 @@ export default function HomePage() {
         <UploadBox />
       </div>
       <FeatureSection />
+      <Footer />
     </div>
   );
 }
