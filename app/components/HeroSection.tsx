@@ -28,9 +28,6 @@ export default function HeroSection() {
               <button className="px-8 py-3 bg-[#4A7766] text-white rounded-full font-semibold hover:bg-[#3C6757] hover:shadow-[0_0_20px_rgba(74,119,102,0.45)] transform hover:-translate-y-1 transition-all duration-300">
                 Start Exploring
               </button>
-              <button className="px-8 py-3 bg-[#4A7766] text-white rounded-full font-semibold hover:bg-[#3C6757] hover:shadow-[0_0_20px_rgba(74,119,102,0.45)] transform hover:-translate-y-1 transition-all duration-300">
-                Upload Content
-              </button>
             </div>
           </div>
         </div>
