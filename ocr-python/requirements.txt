@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+pillow
+pytesseract
+pymupdf==1.24.10
+python-multipart
