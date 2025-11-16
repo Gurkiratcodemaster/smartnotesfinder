@@ -1,12 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
-import File from "@/app/models/File";
+import { File } from "@/app/models/File";
 import LocalFileStorage from "@/lib/fileStorage";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-// Simple text similarity function
+// Enhanced text similarity function with label matching
+function calculateLabelSimilarity(query: string, labels: any): number {
+  const queryWords = query.toLowerCase().split(/\W+/).filter(word => word.length > 1);
+  let score = 0;
+  let totalChecks = 0;
+
+  // Check each label field
+  const labelFields = [
+    labels?.subject,
+    labels?.topic,
+    labels?.class,
+    labels?.semester,
+    ...(Array.isArray(labels?.tags) ? labels.tags : [])
+  ].filter(Boolean);
+
+  labelFields.forEach(labelValue => {
+    if (typeof labelValue === 'string') {
+      totalChecks++;
+      const labelWords = labelValue.toLowerCase().split(/\W+/).filter(word => word.length > 1);
+      
+      queryWords.forEach(queryWord => {
+        labelWords.forEach(labelWord => {
+          if (labelWord.includes(queryWord) || queryWord.includes(labelWord)) {
+            score += 1;
+          } else if (labelWord === queryWord) {
+            score += 2; // Exact match bonus
+          }
+        });
+      });
+    }
+  });
+
+  return totalChecks > 0 ? score / (queryWords.length * totalChecks) : 0;
+}
+
+// Text content similarity
 function calculateTextSimilarity(query: string, content: string): number {
+  if (!content) return 0;
+  
   const queryWords = query.toLowerCase().split(/\W+/).filter(word => word.length > 2);
   const contentWords = content.toLowerCase().split(/\W+/).filter(word => word.length > 2);
   
@@ -17,129 +54,113 @@ function calculateTextSimilarity(query: string, content: string): number {
   return queryWords.length > 0 ? matches.length / queryWords.length : 0;
 }
 
-// Types for search
-interface SearchFilters {
-  subject?: string;
-  topic?: string;
-  tags?: string;
-  fileType?: string;
-}
-
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    // Check authentication
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-    }
+    const body = await req.json();
+    const { query, filters } = body;
 
-    const token = authHeader.split(" ")[1];
-    try {
-      jwt.verify(token, JWT_SECRET);
-    } catch (error) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const query = searchParams.get('q') || '';
-    const subject = searchParams.get('subject');
-    const topic = searchParams.get('topic');
-    const tags = searchParams.get('tags');
-    const fileType = searchParams.get('fileType');
-
-    if (!query) {
+    if (!query?.trim()) {
       return NextResponse.json({ error: "Search query is required" }, { status: 400 });
     }
 
-    let files;
+    // Get all files from database
+    const allFiles = await (File as any).findAll();
     
-    if (query.trim()) {
-      // Search files by content
-      files = await File.search(query);
-    } else {
-      // Get all files
-      files = await File.findAll();
+    if (!allFiles || allFiles.length === 0) {
+      return NextResponse.json({
+        results: [],
+        query,
+        totalResults: 0,
+        message: "No files found in database"
+      });
     }
 
-    // Apply additional filters
-    let filteredFiles = files;
-
-    if (subject) {
-      filteredFiles = filteredFiles.filter(file => 
-        file.labels?.subject?.toLowerCase().includes(subject.toLowerCase())
-      );
-    }
-
-    if (topic) {
-      filteredFiles = filteredFiles.filter(file => 
-        file.labels?.topic?.toLowerCase().includes(topic.toLowerCase())
-      );
-    }
-
-    if (tags) {
-      filteredFiles = filteredFiles.filter(file => 
-        file.labels?.tags?.some((tag: string) => 
-          tag.toLowerCase().includes(tags.toLowerCase())
-        )
-      );
-    }
-
-    if (fileType) {
-      filteredFiles = filteredFiles.filter(file => 
-        file.mime_type?.includes(fileType)
-      );
-    }
-
-    // Calculate relevance scores
-    const resultsWithScores = filteredFiles.map(file => {
+    // Calculate relevance scores for each file
+    const resultsWithScores = allFiles.map((file: any) => {
       let score = 0;
-      const fileContent = [
-        file.file_name,
-        file.original_name,
-        file.content || '',
-        JSON.stringify(file.labels || {}),
-      ].join(' ');
 
-      // Text similarity score
-      score += calculateTextSimilarity(query, fileContent) * 0.6;
+      // 1. Label similarity (highest weight - 60%)
+      const labelScore = calculateLabelSimilarity(query, file.labels);
+      score += labelScore * 0.6;
 
-      // Exact matches boost
-      if (file.file_name.toLowerCase().includes(query.toLowerCase())) {
-        score += 0.3;
-      }
-      if (file.original_name.toLowerCase().includes(query.toLowerCase())) {
-        score += 0.2;
+      // 2. Text content similarity (30%)
+      const textScore = calculateTextSimilarity(query, file.content || '');
+      score += textScore * 0.3;
+
+      // 3. Filename matches (10%)
+      const fileName = (file.original_name || file.file_name || '').toLowerCase();
+      if (fileName.includes(query.toLowerCase())) {
+        score += 0.1;
       }
 
-      // Recent files boost
-      const daysSinceUpload = file.upload_date ? 
-        (Date.now() - new Date(file.upload_date).getTime()) / (1000 * 60 * 60 * 24) : 0;
-      const recencyBoost = Math.max(0, 1 - daysSinceUpload / 30) * 0.1;
-      score += recencyBoost;
+      // Apply filters
+      if (filters && Object.keys(filters).length > 0) {
+        let filterMatch = true;
+        
+        if (filters.subject && file.labels?.subject !== filters.subject) {
+          filterMatch = false;
+        }
+        if (filters.class && file.labels?.class !== filters.class) {
+          filterMatch = false;
+        }
+        if (filters.semester && file.labels?.semester !== filters.semester) {
+          filterMatch = false;
+        }
+        if (filters.uploaderType && file.labels?.uploaderType !== filters.uploaderType) {
+          filterMatch = false;
+        }
+        
+        if (!filterMatch) {
+          score = 0; // Exclude files that don't match filters
+        }
+      }
 
       return {
         ...file,
-        score,
+        searchScore: score,
         fileUrl: LocalFileStorage.getFileUrl(file.file_name)
       };
     });
 
-    // Sort by relevance score
-    resultsWithScores.sort((a, b) => b.score - a.score);
+    // Filter out files with zero score and sort by relevance
+    const filteredResults = resultsWithScores
+      .filter((file: any) => file.searchScore > 0)
+      .sort((a: any, b: any) => b.searchScore - a.searchScore);
 
-    // Format results
-    const results = resultsWithScores.map(file => ({
+    // Format results to match the frontend interface
+    const results = filteredResults.map((file: any) => ({
       id: file.id,
-      fileName: file.file_name,
-      originalName: file.original_name,
-      fileSize: file.file_size,
-      mimeType: file.mime_type,
-      fileUrl: file.fileUrl,
-      uploadDate: file.upload_date,
-      labels: file.labels,
-      metadata: file.metadata,
-      score: file.score,
-      preview: file.content?.substring(0, 200) + (file.content?.length > 200 ? '...' : '') || ''
+      fileName: file.original_name || file.file_name,
+      cloudflareUrl: `/file/${file.id}`, // Link to file view page
+      labels: {
+        subject: file.labels?.subject || "General",
+        topic: file.labels?.topic || "General", 
+        class: file.labels?.class,
+        semester: file.labels?.semester,
+        tags: file.labels?.tags || []
+      },
+      metadata: {
+        pageCount: file.metadata?.pageCount,
+        extractedAt: file.created_at || new Date().toISOString()
+      },
+      uploaderType: file.labels?.uploaderType || "student",
+      uploader: {
+        name: file.labels?.uploaderName || "Anonymous User",
+        userType: file.labels?.uploaderType || "student"
+      },
+      ratings: {
+        averageRating: file.labels?.averageRating || 0,
+        totalRatings: file.labels?.totalRatings || 0
+      },
+      viewsCount: file.labels?.viewsCount || 0,
+      searchScore: {
+        semantic: calculateLabelSimilarity(query, file.labels),
+        textMatch: calculateTextSimilarity(query, file.content || ''),
+        labelMatch: calculateLabelSimilarity(query, file.labels),
+        rating: file.labels?.averageRating || 0,
+        combined: file.searchScore
+      },
+      preview: file.content?.substring(0, 200) + (file.content?.length > 200 ? '...' : '') || 'No preview available'
     }));
 
     return NextResponse.json({
@@ -147,8 +168,8 @@ export async function GET(req: NextRequest) {
       query,
       totalResults: results.length,
       searchMetrics: {
-        avgScore: results.length ? results.reduce((sum, r) => sum + r.score, 0) / results.length : 0,
-        maxScore: results.length ? Math.max(...results.map(r => r.score)) : 0,
+        avgScore: results.length ? results.reduce((sum: number, r: any) => sum + r.searchScore.combined, 0) / results.length : 0,
+        maxScore: results.length ? Math.max(...results.map((r: any) => r.searchScore.combined)) : 0,
       }
     });
 
@@ -159,4 +180,22 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
+}
+
+// Keep GET method for backward compatibility
+export async function GET(req: NextRequest) {
+  return NextResponse.json({ 
+    message: "Please use POST method for search",
+    endpoint: "/api/search",
+    method: "POST",
+    body: {
+      query: "your search terms",
+      filters: {
+        subject: "optional",
+        class: "optional", 
+        semester: "optional",
+        uploaderType: "optional"
+      }
+    }
+  });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 
 interface SearchResult {
@@ -38,16 +38,50 @@ interface SearchResult {
   preview: string;
 }
 
+interface AvailableLabels {
+  subjects: string[];
+  classes: string[];
+  semesters: string[];
+  uploaderTypes: string[];
+  topics: string[];
+  tags: string[];
+}
+
 export default function SearchPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [availableLabels, setAvailableLabels] = useState<AvailableLabels>({
+    subjects: [],
+    classes: [],
+    semesters: [],
+    uploaderTypes: [],
+    topics: [],
+    tags: []
+  });
   const [filters, setFilters] = useState({
     subject: "",
     class: "",
     semester: "",
     uploaderType: "",
   });
+
+  // Load available labels on component mount
+  useEffect(() => {
+    const fetchLabels = async () => {
+      try {
+        const response = await fetch("/api/search/labels");
+        if (response.ok) {
+          const labels = await response.json();
+          setAvailableLabels(labels);
+        }
+      } catch (error) {
+        console.error("Failed to fetch labels:", error);
+      }
+    };
+
+    fetchLabels();
+  }, []);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +102,10 @@ export default function SearchPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setResults(data.results);
+        setResults(data.results || []);
+        if (data.results?.length === 0) {
+          console.log("No matching results found");
+        }
       } else {
         console.error("Search failed:", data.error);
         setResults([]);
@@ -136,13 +173,9 @@ export default function SearchPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-primary-green"
               >
                 <option value="">All Subjects</option>
-                <option value="Mathematics">Mathematics</option>
-                <option value="Physics">Physics</option>
-                <option value="Chemistry">Chemistry</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Biology">Biology</option>
-                <option value="Literature">Literature</option>
-                <option value="History">History</option>
+                {availableLabels.subjects.map(subject => (
+                  <option key={subject} value={subject}>{subject}</option>
+                ))}
               </select>
 
               <select
@@ -151,12 +184,9 @@ export default function SearchPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-primary-green"
               >
                 <option value="">All Classes</option>
-                <option value="9th Grade">9th Grade</option>
-                <option value="10th Grade">10th Grade</option>
-                <option value="11th Grade">11th Grade</option>
-                <option value="12th Grade">12th Grade</option>
-                <option value="Undergraduate">Undergraduate</option>
-                <option value="Graduate">Graduate</option>
+                {availableLabels.classes.map(className => (
+                  <option key={className} value={className}>{className}</option>
+                ))}
               </select>
 
               <select
@@ -165,10 +195,9 @@ export default function SearchPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-primary-green"
               >
                 <option value="">All Semesters</option>
-                <option value="Semester 1">Semester 1</option>
-                <option value="Semester 2">Semester 2</option>
-                <option value="Fall 2024">Fall 2024</option>
-                <option value="Spring 2024">Spring 2024</option>
+                {availableLabels.semesters.map(semester => (
+                  <option key={semester} value={semester}>{semester}</option>
+                ))}
               </select>
 
               <select
@@ -177,9 +206,9 @@ export default function SearchPage() {
                 className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-green focus:border-primary-green"
               >
                 <option value="">All Uploaders</option>
-                <option value="student">Students</option>
-                <option value="teacher">Teachers</option>
-                <option value="college">Colleges</option>
+                {availableLabels.uploaderTypes.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
               </select>
             </div>
           </form>
@@ -188,9 +217,14 @@ export default function SearchPage() {
         {/* Search Results */}
         {results.length > 0 && (
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-text-dark">
-              Search Results ({results.length})
-            </h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-text-dark">
+                Search Results ({results.length})
+              </h2>
+              <div className="text-sm text-text-light">
+                Sorted by relevance • Best matches first
+              </div>
+            </div>
             
             {results.map((result) => (
               <div
@@ -203,21 +237,28 @@ export default function SearchPage() {
                       {result.fileName}
                     </h3>
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <span className="px-3 py-1 bg-primary-green text-white rounded-full text-sm">
+                      <span className="px-3 py-1 bg-primary-green text-white rounded-full text-sm font-medium">
                         {result.labels.subject}
                       </span>
-                      <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm">
+                      <span className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium">
                         {result.labels.topic}
                       </span>
                       {result.labels.class && (
-                        <span className="px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm">
+                        <span className="px-3 py-1 bg-purple-100 text-purple-600 rounded-full text-sm font-medium">
                           {result.labels.class}
                         </span>
                       )}
                       {result.labels.semester && (
-                        <span className="px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm">
+                        <span className="px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium">
                           {result.labels.semester}
                         </span>
+                      )}
+                      {result.labels.tags && result.labels.tags.length > 0 && (
+                        result.labels.tags.slice(0, 2).map((tag, index) => (
+                          <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
+                            #{tag}
+                          </span>
+                        ))
                       )}
                     </div>
                   </div>
@@ -232,6 +273,9 @@ export default function SearchPage() {
                     <p className="text-sm text-text-light">
                       {result.viewsCount} views • {result.uploaderType}
                     </p>
+                    <div className="text-xs text-green-600 font-medium mt-1">
+                      Match: {(result.searchScore.combined * 100).toFixed(1)}%
+                    </div>
                   </div>
                 </div>
 
@@ -239,10 +283,13 @@ export default function SearchPage() {
 
                 <div className="flex justify-between items-center">
                   <div className="text-sm text-text-light">
-                    <span>Match Score: {(result.searchScore.combined * 100).toFixed(1)}%</span>
-                    {result.metadata.pageCount && (
-                      <span className="ml-4">{result.metadata.pageCount} pages</span>
-                    )}
+                    <div className="flex gap-4">
+                      <span>Label Match: {(result.searchScore.labelMatch * 100).toFixed(0)}%</span>
+                      <span>Text Match: {(result.searchScore.textMatch * 100).toFixed(0)}%</span>
+                      {result.metadata.pageCount && (
+                        <span>{result.metadata.pageCount} pages</span>
+                      )}
+                    </div>
                   </div>
                   
                   <button

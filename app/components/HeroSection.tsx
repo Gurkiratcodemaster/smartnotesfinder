@@ -33,12 +33,20 @@ export default function HeroSection() {
             and academic content.
           </p>
           <div className="pt-4">
+<<<<<<< HEAD
             <button 
               onClick={scrollToFeatures}
               className="px-8 py-3 bg-[#4A7766] text-white rounded-full font-semibold hover:bg-[#3C6757] hover:text-[#e8f5f2] hover:shadow-[0_0_30px_rgba(74,119,102,0.6)] transform hover:-translate-y-1 transition-all duration-300 active:scale-95"
             >
               Start Exploring
             </button>
+=======
+            <div className="inline-flex items-center gap-4 p-4 rounded-2xl border-2 border-[#4A7766] bg-white shadow-sm">
+              <button className="px-8 py-3 bg-[#4A7766] text-white rounded-full font-semibold hover:bg-[#3C6757] hover:shadow-[0_0_20px_rgba(74,119,102,0.45)] transform hover:-translate-y-1 transition-all duration-300">
+                Start Exploring
+              </button>
+            </div>
+>>>>>>> ee889f61250afbab32d99e72ff948e03fdf25355
           </div>
         </div>
 

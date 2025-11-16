@@ -37,6 +37,13 @@ export default function UploadBox() {
       });
 
       const result = await response.json();
+<<<<<<< HEAD
+=======
+
+      if (!response.ok) {
+        throw new Error(result.error || "Upload failed");
+      }
+>>>>>>> ee889f61250afbab32d99e72ff948e03fdf25355
 
       if (!response.ok) {
         throw new Error(result.error || "Upload failed");
@@ -44,9 +51,12 @@ export default function UploadBox() {
 
       setMessage("✓ Successfully Uploaded!");
       setOcrText(result.extractedText || "No text extracted.");
+<<<<<<< HEAD
       
       // Auto-clear success message after 5 seconds
       setTimeout(() => setMessage(""), 5000);
+=======
+>>>>>>> ee889f61250afbab32d99e72ff948e03fdf25355
 
     } catch (err: any) {
       console.error(err);
@@ -99,6 +109,7 @@ export default function UploadBox() {
   };
 
   return (
+<<<<<<< HEAD
     <div className="w-full bg-white">
       {/* Main Container */}
       <div className="w-full px-6 py-16 bg-gradient-to-b from-white to-gray-50">
@@ -130,6 +141,30 @@ export default function UploadBox() {
               onChange={handleSelect}
               accept=".pdf,.jpg,.jpeg,.png,.txt"
             />
+=======
+    <div className="w-full max-w-2xl mx-auto p-6">
+      
+      {/* Upload Box */}
+      <div
+        className={`border-2 border-dashed p-8 rounded-lg text-center ${
+          isDragOver ? "bg-blue-100 border-blue-500" : "border-gray-400"
+        } cursor-pointer`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragOver(true);
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => document.getElementById("fileInput")?.click()}
+      >
+        <input
+          id="fileInput"
+          type="file"
+          hidden
+          onChange={handleSelect}
+          accept=".pdf,.jpg,.jpeg,.png,.txt"
+        />
+>>>>>>> ee889f61250afbab32d99e72ff948e03fdf25355
 
             <div className="text-5xl mb-4">📤</div>
             <p className="text-lg font-medium text-text-dark">Drop your file here</p>
@@ -154,6 +189,21 @@ export default function UploadBox() {
         </div>
       </div>
 
+<<<<<<< HEAD
+=======
+      {/* Status Message */}
+      {message && (
+        <div className="mt-4 p-3 bg-gray-100 rounded border">
+          {message}
+        </div>
+      )}
+
+      {isUploading && <div className="mt-3">Uploading...</div>}
+
+      {/* Extracted Text Viewer */}
+      {ocrText && <TextDisplay text={ocrText} />}
+
+>>>>>>> ee889f61250afbab32d99e72ff948e03fdf25355
       {/* Labels form modal */}
       {showLabelsForm && selectedFile && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
