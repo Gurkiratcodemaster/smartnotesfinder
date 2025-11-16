@@ -7,91 +7,100 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
 export async function POST(req: NextRequest) {
   try {
-    // Log request details for debugging
-    console.log('Upload request received');
-    console.log('Content-Type:', req.headers.get('content-type'));
-    console.log('Method:', req.method);
-    
-    // Check authentication (optional for uploads)
+    console.log("Upload request received");
+
+    // Optional JWT Authentication
     const authHeader = req.headers.get("authorization");
-    let decoded = null;
-    let userId = null;
-    
+    let userId = "anonymous";
+
     if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.split(" ")[1];
       try {
-        decoded = jwt.verify(token, JWT_SECRET) as any;
-        userId = decoded.userId;
-      } catch (error) {
-        // Token is invalid, but we'll allow anonymous upload
-        console.log("Invalid token provided, proceeding with anonymous upload");
+        const token = authHeader.split(" ")[1];
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        userId = decoded?.userId ?? "anonymous";
+      } catch {
+        console.warn("Invalid JWT – using anonymous");
       }
     }
 
+    // Read Form Data
     const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const labels = formData.get('labels') as string;
+    const file = formData.get("file") as File;
+    const labelsString = formData.get("labels") as string;
 
     if (!file) {
       return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
     }
 
-    // Validate file type
-    if (!LocalFileStorage.isValidFileType(file.type)) {
-      return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
-    }
-
-    // Generate unique filename
-    const fileName = LocalFileStorage.generateFileName(file.name, file.type);
-    
-    // Convert file to buffer
     const fileBuffer = Buffer.from(await file.arrayBuffer());
-    
-    // Save file to local storage
-    const filePath = await LocalFileStorage.saveFile(fileBuffer, fileName, file.name);
 
-    // Parse labels if provided
-    let parsedLabels = {};
+    const fileName = LocalFileStorage.generateFileName(file.name, file.type);
+    const filePath = await LocalFileStorage.saveFile(
+      fileBuffer,
+      fileName,
+      file.name
+    );
+
+    let labels = {};
     try {
-      if (labels) {
-        parsedLabels = JSON.parse(labels);
-      }
-    } catch (error) {
-      console.error('Failed to parse labels:', error);
+      labels = labelsString ? JSON.parse(labelsString) : {};
+    } catch {
+      labels = {};
     }
 
-    // Save file metadata to database
+    // -----------------------------
+    // 🔥 OCR SPACE EXTRACTION
+    // -----------------------------
+    console.log("Sending file to OCR.Space...");
+
+    const ocrForm = new FormData();
+    ocrForm.append("file", new Blob([fileBuffer], { type: file.type }));
+    ocrForm.append("OCREngine", "2");
+
+    const ocrResponse = await fetch("https://api.ocr.space/parse/image", {
+      method: "POST",
+      body: ocrForm,
+      headers: {
+        apikey: "helloworld",
+      },
+    });
+
+    const ocrResult = await ocrResponse.json();
+    let extractedText = "";
+
+    if (ocrResult?.ParsedResults?.[0]?.ParsedText) {
+      extractedText = ocrResult.ParsedResults[0].ParsedText;
+    }
+
+    // Save entry in MongoDB
     const fileRecord = await FileModel.create({
       file_name: fileName,
       original_name: file.name,
       file_size: file.size,
       mime_type: file.type,
       file_path: filePath,
-      content: '', // Will be populated by text extraction if needed
-      labels: parsedLabels,
+      labels,
+      content: extractedText,
       metadata: {
-        uploadedBy: userId || 'anonymous',
+        uploadedBy: userId,
         uploadDate: new Date().toISOString(),
-        isAnonymous: !userId
-      }
+      },
     });
 
     return NextResponse.json({
-      message: "File uploaded successfully",
+      message: "Upload & OCR completed.",
       fileId: fileRecord.id,
-      fileName: fileName,
-      fileUrl: LocalFileStorage.getFileUrl(fileName),
+      fileName,
+      extractedText,
       originalName: file.name,
       size: file.size,
       type: file.type,
-      uploadedBy: userId || 'anonymous',
-      isAuthenticated: !!userId
+      fileUrl: LocalFileStorage.getFileUrl(fileName),
     });
-
-  } catch (error: any) {
-    console.error("Upload error:", error);
+  } catch (err: any) {
+    console.error("ERROR IN UPLOAD:", err);
     return NextResponse.json(
-      { error: "Failed to upload file", detail: error.message },
+      { error: "Upload failed", detail: err.message },
       { status: 500 }
     );
   }
